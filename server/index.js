@@ -3,7 +3,10 @@ import { Server } from 'socket.io';
 import http from 'http';
 import cors from 'cors';
 
+import TempDB from './Classes/TempDB.js';
 import Rooms from './Classes/Rooms.js'
+
+TempDB.init();
 
 const app = express();
 const server = http.createServer(app);

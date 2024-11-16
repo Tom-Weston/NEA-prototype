@@ -29,12 +29,12 @@ type RoomData = {
 
 interface FormInfo {
 	template: string;
-	roomSize: string;
+	size: string;
 }
 
 export default function CreateRoom() {
 	const [socket, setSocket] = useState<Socket | undefined>(undefined);
-	const [formInfo, setFormInfo] = useState<FormInfo>({template: "", roomSize: ""})
+	const [formInfo, setFormInfo] = useState<FormInfo>({template: "", size: ""})
 	const [/*roomData*/, setRoomData] = useState<RoomData>();
 
 
@@ -72,7 +72,7 @@ export default function CreateRoom() {
 				</div>
 
 				{/* Room Size */}
-				<input className="centre-text" type="text" name="roomSize" placeholder="Room Size" onChange={(e) => updateFormInfo(e)} required />
+				<input className="centre-text" type="text" name="size" placeholder="Room Size" onChange={(e) => updateFormInfo(e)} required />
 				
 				<input type="submit" value="Create Room" />
 			</form>

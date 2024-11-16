@@ -1,3 +1,7 @@
+// Classes
+import TempDB from './TempDB.js';
+
+// Templates
 import FoodTemplate from '../templates/Film.js';
 import FilmTemplate from '../templates/Food.js';
 
@@ -12,32 +16,91 @@ export default class Rooms {
 			templateJSON = FilmTemplate;
 		};
 
-		// Store title and questions in the room info
-		roomInfo = {...roomInfo, title: templateJSON.title, questions: templateJSON.questions};
+		// Store title in the room info
+		roomInfo = {...roomInfo, title: templateJSON.title};
 
-		var invCode = await this.GenerateInviteCode();
-        console.log(`---------------> [${invCode}] NEW ROOM (${roomInfo.size}) <---------------`);
+		// Questions aren't stored in the room info as not all of them will be sent to the user initially
+		const questions = templateJSON.questions
+
+		// Get invite code and store in room info
+		var inviteCode = await this.GenerateInviteCode();
+		roomInfo = {...roomInfo, inviteCode: inviteCode};
+
+        console.log(`---------------> [${roomInfo.inviteCode}] NEW ROOM (${roomInfo.size}) <---------------`);
         console.log(`Host: '${socket.id}' | Title: ${roomInfo.title}\n`);
 
-		// Store invite code in the room info
-		roomInfo = {...roomInfo, inviteCode: invCode};
+		// Create room in DB
+		await TempDB.run(`
+		INSERT INTO Room (title, inviteCode, maxSize, hostAccountID)
+		VALUES (?, ?, ?, ?)`,
+		[roomInfo.title, roomInfo.inviteCode, roomInfo.size, socket.id])
+		
+		// Get the room ID from the newly created room (and store in roomInfo)
+		const roomID = (await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [roomInfo.inviteCode])).id;
+		roomInfo = {...roomInfo, id: roomID};
 
-		// NEED TO ADD [CREATE ROOM IN DB]
+		// Store info in DB for each (sub-)question in the room
+		// Unfortunately, getting the unix timestamp doesn't make the questions different, so the index (from 0) is used instead
+		questions.forEach(async (question, index) => {
 
-        // NEED TO ADD [GET ROOM ID FROM NEW ROOM IN DB AND SAVE TO CLIENT SESSION]
+			// Get unix timestamp (in ms) (from https://stackoverflow.com/questions/221294/how-do-i-get-a-timestamp-in-javascript)
+			const timestamp = Date.now()
+
+			// Store questions in DB (linked by room ID)
+			await TempDB.run(`
+			INSERT INTO Question (count, title, creationTime, roomID)
+			VALUES (?, ?, ?, ?)`,
+			[index, question.title, timestamp, roomInfo.id]);
+			
+			// Store options in DB (linked by question ID got by index counter)
+			const questionID = (await TempDB.get("SELECT id FROM Question WHERE count = ? and roomID = ?", [index, roomInfo.id])).id;
+			question.options.forEach(async option => {
+				await TempDB.run(`
+				INSERT INTO Option (name, questionID)
+				VALUES (?, ?)`,
+				[option, questionID]);
+			});
+		});
+
+		// As this function is asynchronous (as efficient as possible), there needs to be
+		// a waiting system until all the questions and options have successfully entered the database (DB)
+		// (as there is no callback when an item has been successfully stored in the DB)
+		// So, a reattempt timeout of 10ms is repeated until the number of options in the DB match it locally (on average ~20ms until success)
+		// tl;dr Get first question (and its options) to send to user (get from DB instead of locally to confirm connection)
+		var currQuestion, currOptions;
+		var success = false;
+		while (!success) {
+			// Attempt to get the (correct) question & options
+			currQuestion = await TempDB.get("SELECT id, title from Question WHERE count = 0 AND roomID = ?", [roomInfo.id])
+			currOptions = await TempDB.all("SELECT * from Option WHERE questionID = ?", [currQuestion.id])
+
+			// Check if DB and local options match
+			if (currOptions.length == questions[0].options.length) {
+				success = true;
+			} else {
+				// Timeout for 10ms
+				console.log("TIMEOUT")
+				await new Promise(res => setTimeout(res, 10));
+			}
+		}
+		
+		// Add the correct question values into the roomInfo
+		roomInfo = {...roomInfo, currQuestion: {title: currQuestion.title, options: currOptions}}
 		
 		// Join room (w/ room data)
-		// NOTE: USING TEMPORARY DATA (with DB, only first question w/ options will be shown)
 		socket.emit('res: join-room', roomInfo);
 	}
 
-	static async JoinRoom(socket, roomCode) {
+	static async JoinRoom(socket, inviteCode) {
 
 		// NEED TO ADD [CHECK IF CLIENT IS ALREADY CONNECTED TO A ROOM]
 
         // NEED TO ADD [CREATE A CONNECTION BETWEEN THE CLIENT AND THE ROOM]
-		
-		socket.join(roomCode);
+		const roomID = await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode])
+		console.log("Room ID: " + roomID)
+		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, socket.id])
+
+		socket.join(inviteCode);
 		
 		// NEED TO ADD [GET ROOM DATA FROM DB]
 		// INCLUDES:
@@ -69,7 +132,7 @@ export default class Rooms {
 		};
 		
 		// Join room (w/ room data)
-		socket.emit('res: join-room', roomData[roomCode]);
+		socket.emit('res: join-room', roomData[inviteCode]);
 	}
 
 	static async GenerateInviteCode() {

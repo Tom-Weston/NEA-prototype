@@ -11,9 +11,11 @@ export default class TempDB {
 	// Only one dbInstance can exist at a time
 	static dbInstance;
 
+	// Setup DB
 	static async init() {
-		// Create database connection instance (if it doesn't already exist)
 		if (!this.dbInstance) {
+
+			// Create database connection instance (if it doesn't already exist)
 			this.dbInstance = await open({
 				filename: path.resolve("./TEMPDB/Database.db"),
 				driver: sqlite3.Database
@@ -21,21 +23,44 @@ export default class TempDB {
 
 			console.log(`\n=====< [/] DATABASE INITIALISED >=====\n`);
 			
+			// Enables using WHERE statements with foreign keys
+			// (from: https://stackoverflow.com/questions/15443913/sqlite3-foreign-key-constraint-failed)
+			await TempDB.run("PRAGMA foreign_keys = 1;");
+
 			// Creating tables (if they don't exist)
+			// NOTE: id needs to be an integer to auto-increment (may be able to change when moving to MySQL)
 			await this.dbInstance.exec(`
-				CREATE TABLE IF NOT EXISTS Rooms (
-					id STRING NOT NULL,
+				CREATE TABLE IF NOT EXISTS Room (
+					id INTEGER NOT NULL,
 					title TEXT NOT NULL,
 					inviteCode STRING NOT NULL,
-					maxSize TINYINT NOT NULL,
+					maxSize INTEGER NOT NULL,
 					hostAccountID STRING NOT NULL,
 					PRIMARY KEY(id)
 				);
 
 				CREATE TABLE IF NOT EXISTS Connection (
-					id STRING,
+					roomID STRING,
 					accountID STRING,
-					PRIMARY KEY(id, accountID)
+					PRIMARY KEY(roomID, accountID)
+				);
+
+				CREATE TABLE IF NOT EXISTS Question (
+					id INTEGER NOT NULL,
+					count INTEGER NOT NULL,
+					title TEXT NOT NULL,
+					creationTime BIGINTEGER NOT NULL,
+					roomID INTEGER NOT NULL,
+					PRIMARY KEY (id),
+					FOREIGN KEY (roomID) REFERENCES Room(id)
+				);
+
+				CREATE TABLE IF NOT EXISTS Option (
+					id INTEGER NOT NULL,
+					name TEXT NOT NULL,
+					questionID INTEGER NOT NULL,
+					PRIMARY KEY (id),
+					FOREIGN KEY (questionID) REFERENCES Question(id)
 				);
 			`);
 		}
@@ -48,11 +73,12 @@ export default class TempDB {
 		return this.dbInstance.run(query, params)
 	}
 
-	// 
+	// Get a record of data with a query (SELECT ...)
 	static async get(query, params = []) {
 		return this.dbInstance.get(query, params)
 	}
 
+	// Get all records in a table with a query (SELECT * ...)
 	static async all(query, params = []) {
 		return this.dbInstance.all(query, params);
 	}

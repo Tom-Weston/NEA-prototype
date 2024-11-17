@@ -5,8 +5,8 @@ export default function Home() {
 		<>
 			<h1 >Home</h1>
 			<div className="list-row">
-				<Redir to="/create" content="Create Room" />
-				<Redir to="/join" content="Join Room" />
+				<Redir to="/create" content="Create Room" state={null} />
+				<Redir to="/join" content="Join Room" state={null} />
 			</div>
 		</>
 	)

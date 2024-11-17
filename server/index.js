@@ -4,9 +4,10 @@ import http from 'http';
 import cors from 'cors';
 
 import TempDB from './Classes/TempDB.js';
-import Rooms from './Classes/Rooms.js'
+import RoomHandler from './Classes/RoomHandler.js'
 
 TempDB.init();
+RoomHandler.init();
 
 const app = express();
 const server = http.createServer(app);
@@ -30,17 +31,20 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-	console.log("User connected.");
+	// console.log("User connected.");
 
 	socket.on('req: join-room', (room) => {
-		Rooms.JoinRoom(socket, room);
+		RoomHandler.JoinRoom(socket, room);
+	})
+
+	socket.on('req: room-data', (room) => {
+		RoomHandler.GetRoomData(socket, room);
 	})
 
 	socket.on('req: create-room', (roomInfo) => {
-		Rooms.CreateRoom(socket, roomInfo);
+		RoomHandler.CreateRoom(socket, roomInfo);
 	})
 });
-
 
 server.listen(PORT, () => {
 	console.log(`Listening on *:${PORT}`);

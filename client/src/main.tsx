@@ -1,11 +1,12 @@
-import { StrictMode } from 'react'
+// React
 import { createRoot } from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider} from 'react-router-dom';
 
 // Components
 import Home from './components/Home';
 import CreateRoom from './components/CreateRoom';
 import JoinRoom from './components/JoinRoom';
+import Room from './components/Room';
 
 // Styling
 import './index.css';
@@ -24,11 +25,13 @@ const router = createBrowserRouter([
   {
     path: '/join',
     element: <JoinRoom />
+  },
+  {
+    path: "/room/:id",
+    element: <Room />
   }
 ]);
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <RouterProvider router={router}  />
-  </StrictMode>,
+  <RouterProvider router={router}  />
 )

@@ -1,51 +1,56 @@
-import { io, Socket } from 'socket.io-client';
-import { useState, useEffect, Dispatch, SetStateAction, FormEvent} from 'react';
+// React
+import { useState, useEffect, FormEvent} from 'react';
+import { NavigateFunction, useNavigate } from 'react-router-dom';
 
+// Socket
+import { io, Socket } from 'socket.io-client';
+
+// Components
 import Redir from "./Redir";
 
-const socketEvents = (socketData: Socket, setRoomData: Dispatch<SetStateAction<RoomData | undefined>>) => {
+const socketEvents = (socketData: Socket , navigate: NavigateFunction) => {
 	const socket = socketData;
 	// Log when connected
 	socket.on("connect", () => {
 		console.log("Connected to server");
 	});
 
+	// When room data is sent over (send to room)
 	socket.on("res: join-room", (data) => {
-		setRoomData(data);
 		console.log("Room Data: ");
 		console.log(data);
-		alert("TO ADD: \nCreate room endpoint to redirect to /room/{invCode}/")
+
+		navigate(`/room/${data.inviteCode}`, { state: { roomData: data} })
 	});
 };
 
-type RoomData = {
-	title: string,
-	question: string,
-	options: string[]
-}
 
 export default function JoinRoom() {
-	const [socket, setSocket] = useState<Socket | undefined>(undefined);
+	const [socket, setSocket] = useState<Socket>(io());
 	const [room, setRoom] = useState("");
-	const [/*roomData*/, setRoomData] = useState<RoomData>();
 
-	function joinRoom(e: FormEvent<HTMLFormElement>) {
-		e.preventDefault()
+	const navigate = useNavigate();
 
-		socket?.emit("req: join-room", room);
-	}
-
+	// The socket is saved as a state so that it can
+	// be disconnected when the user redirects
 	useEffect(() => {
-		const socketData = io("http://localhost:3001");
+		const socketData = io("http://localhost:3001")
 		setSocket(socketData);
-		
-		socketEvents(socketData, setRoomData);
+
+		socketEvents(socketData, navigate);
 
 		// Cleanup on component unmount
 		return () => {
 			socketData.disconnect();
 		};
-	}, []);
+	}, [navigate]);
+	
+	// Called when the form is submitted
+	function joinRoom(e: FormEvent<HTMLFormElement>) {
+		e.preventDefault()
+
+		socket.emit("req: join-room", room);
+	}
 
 	return (
 		<>

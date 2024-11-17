@@ -1,31 +1,27 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+// React
+import { useEffect, useState } from "react";
+import { NavigateFunction, useNavigate } from "react-router-dom";
 
-import Redir from "./Redir";
+// Socket
 import { io, Socket } from "socket.io-client";
 
+// Components
+import Redir from "./Redir";
+
 // Handles the client-server connection
-const socketEvents = (socketData: Socket, setRoomData: Dispatch<SetStateAction<RoomData | undefined>>) => {
+const socketEvents = (socketData: Socket, navigate: NavigateFunction) => {
 	const socket = socketData;
+
 	// Log when connected
 	socket.on("connect", () => {
 		console.log("Connected to server");
 	});
 
-	// When room data is sent over (send to room)
+	// Send to room (when room is created)
 	socket.on("res: join-room", (data) => {
-		setRoomData(data);
-		console.log("Room Data: ");
-		console.log(data);
-		console.warn("THIS IS NOT THE ACTUAL ROOM DATA FORMAT, please check the data recieved in JoinRoom.tsx")
-		alert("TO ADD: \nCreate room endpoint to redirect to /room/{invCode}/")
+		navigate(`/room/${data.inviteCode}`)
 	});
 };
-
-type RoomData = {
-	title: string,
-	question: string,
-	options: string[]
-}
 
 interface FormInfo {
 	template: string;
@@ -33,22 +29,24 @@ interface FormInfo {
 }
 
 export default function CreateRoom() {
-	const [socket, setSocket] = useState<Socket | undefined>(undefined);
+	const [socket, setSocket] = useState<Socket>(io("http://localhost:3001"));
 	const [formInfo, setFormInfo] = useState<FormInfo>({template: "", size: ""})
-	const [/*roomData*/, setRoomData] = useState<RoomData>();
+	
+	// Redirect function (for to-be-created room)
+	const navigate = useNavigate();
 
-
+	// Setup the socket connection
 	useEffect(() => {
-		const socketData = io("http://localhost:3001");
-		setSocket(socketData);
-		
-		socketEvents(socketData, setRoomData);
+		const socket = io("http://localhost:3001");
+		setSocket(socket);
+
+		socketEvents(socket, navigate);
 
 		// Cleanup on component unmount
 		return () => {
-			socketData.disconnect();
+			socket.disconnect();
 		};
-	}, []);
+	}, [navigate]);
 
 	function updateFormInfo(e: React.ChangeEvent<HTMLInputElement>) {
 		const {name, value} = e.target;
@@ -58,7 +56,9 @@ export default function CreateRoom() {
 	function createRoom(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		
-		socket?.emit("req: create-room", formInfo);
+		// Request to create the room
+		// Then wait for "res: join-room" (see socketEvents() function)
+		socket.emit("req: create-room", formInfo);
 	}
 
 	return (

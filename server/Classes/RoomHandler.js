@@ -3,16 +3,40 @@ import TempDB from './TempDB.js';
 import Room from './Room.js';
 
 // Templates
-import FoodTemplate from '../templates/Film.js';
-import FilmTemplate from '../templates/Food.js';
+import FilmTemplate from '../templates/Film.js';
+import FoodTemplate from '../templates/Food.js';
 
 export default class RoomHandler {
 	
-	static async init() {
-		this.rooms = {}
+	static async init(io) {
+		this.io = io;
+		this.rooms = {};
 	}
 
-	static async CreateRoom(socket, roomData) {
+	static async GetRoomData(socket, inviteCode) {
+		const room = this.rooms[inviteCode];
+		const roomData = await room.GetRoomData();
+
+		socket.emit("res: room-data", roomData);
+	}
+
+	static async NextQuestion(io, roomCode, name) {
+		const room = await this.rooms[roomCode];
+		const isHost = await room.CheckIfHost(name);
+
+		console.log("==============");
+		console.log(room, isHost)
+
+		if (isHost) {
+			const roomData = await room.GetNextQuestion()
+			console.log("Room Data:")
+			console.log(roomData)
+
+			io.in(roomCode).emit("res: room-data", roomData)
+		}
+	}
+
+	static async CreateRoom(socket, roomData, host) {
 		// Template detection system
 		var templateJSON;
 		if (roomData.template == "Food") {
@@ -21,77 +45,20 @@ export default class RoomHandler {
 			templateJSON = FilmTemplate;
 		};
 		
-		// Get invite code
+		// Get invite code to create Room obj.
 		var inviteCode = await this.GenerateInviteCode();
-
-		console.log(socket.id)
-		this.rooms[inviteCode] = new Room(socket, templateJSON.title, roomData.size, inviteCode, templateJSON.questions)
-
-		console.log("Rooms now: ")
-		console.log(this.rooms)
+		this.rooms[inviteCode] = new Room(socket, host, templateJSON.title, roomData.size, inviteCode, templateJSON.questions)
 	}
 
-	static async GetRoomData(socket, inviteCode) {
-		console.log("Current rooms: ")
-		console.log(this.rooms);
-
-		console.log("Code: " + inviteCode)
-
-		const room = this.rooms[inviteCode];
-		const roomData = await room.GetRoomData();
-
-		socket.emit("res: room-data", roomData);
-	}
-
-	static async JoinRoom(socket, inviteCode) {
-
-        // NEED TO ADD [CREATE A CONNECTION BETWEEN THE CLIENT AND THE ROOM]
-		const roomID = await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode])
-		console.log("Room ID: " + roomID)
-		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, socket.id])
-
-		socket.join(inviteCode);
+	static async JoinRoom(socket, inviteCode, guest) {
+        // Create connection between client and room (max 1 connection)
+		const roomID = (await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode])).id;
+		console.log("Room ID:");
+		console.log(roomID);
+		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, guest])
 		
-		// NEED TO ADD [GET ROOM DATA FROM DB]
-		// INCLUDES:
-		// - INVITE CODE [ROOM]
-		// - TITLE [ROOM]
-		// - CURRENT QUESTION [ROOM]
-		// - rest is handled by templates [as this is a prototype]
-		const rawRoomData = await TempDB.get("SELECT title, inviteCode FROM Room WHERE inviteCode = ?", [inviteCode]);
-		const rawQuestionData = await TempDB.get("SELECT title FROM Question WHERE roomID = ? AND count = ?", [roomID, count]);
-		console.log(rawRoomData);
-		console.log(rawQuestionData);
-
-		// yk what nvm for future me looking at this scratch this
-		// in CreateRoom() just put the server socket into a state
-		// where the client emits "get-data" and the room socket responds with "room-data"
-		// boom done please add 🙏
-
-		// TEMPORARY [REMOVE LATER]
-		const roomData = {
-			'abc': {
-				inviteCode: "ABC123",
-				title: "Room 1",
-				question: "My question",
-				options: ['a', 'b', 'c']
-			},
-			'123': {
-				inviteCode: "CBA321",
-				title: "Room 12",
-				question: "Your question",
-				options: ['1', '2', '3']
-			},
-			'usd': {
-				inviteCode: "AOW023",
-				title: "Room 8",
-				question: "Some other question",
-				options: ['u', 's', 'd']
-			}
-		};
-		
-		// Join room (w/ room data)
-		socket.emit('res: join-room', roomData[inviteCode]);
+		// Join room
+		this.rooms[inviteCode].JoinRoom(socket, guest);
 	}
 
 	static async GenerateInviteCode() {
@@ -108,11 +75,14 @@ export default class RoomHandler {
                 code += alphanumericList[Math.floor(Math.random() * alphanumericList.length)];
             }
 
-            // NEED TO ADD [LOOKUP VALIDATION FROM DB]
-
-            // [[[TEMP]]]
-            // console.log("Created a unique code!")
-            validCode = true;
+            // Make sure that the invite code isn't already taken
+			const duplicateCodes = await TempDB.all("SELECT * FROM Room WHERE inviteCode = ?", [code])
+			if (duplicateCodes.length == 0) {
+				validCode = true;
+			} else {
+				console.log(`INVALID CODE '${code}' - retrying..`)
+				code = ""
+			}
         }
 
         return code

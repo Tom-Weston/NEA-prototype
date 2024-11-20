@@ -1,6 +1,6 @@
 // React
 import { useState, useEffect, FormEvent} from 'react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction, useLocation, useNavigate } from 'react-router-dom';
 
 // Socket
 import { io, Socket } from 'socket.io-client';
@@ -17,10 +17,7 @@ const socketEvents = (socketData: Socket , navigate: NavigateFunction) => {
 
 	// When room data is sent over (send to room)
 	socket.on("res: join-room", (data) => {
-		console.log("Room Data: ");
-		console.log(data);
-
-		navigate(`/room/${data.inviteCode}`, { state: { roomData: data} })
+		navigate(`/room/${data.inviteCode}`, {state: {host: false}})
 	});
 };
 
@@ -30,7 +27,15 @@ export default function JoinRoom() {
 	const [room, setRoom] = useState("");
 
 	const navigate = useNavigate();
+	const { state } = useLocation();
 
+	// If no 'username' in state, redirect to login page (/)
+	useEffect(() => {
+		if (!state?.username) {
+			navigate("/");
+		}
+	}, [state, navigate])
+	
 	// The socket is saved as a state so that it can
 	// be disconnected when the user redirects
 	useEffect(() => {
@@ -49,6 +54,8 @@ export default function JoinRoom() {
 	function joinRoom(e: FormEvent<HTMLFormElement>) {
 		e.preventDefault()
 
+		// Request to join the room
+		// Then wait for "res: join-room" (see socketEvents() function)
 		socket.emit("req: join-room", room);
 	}
 
@@ -63,7 +70,11 @@ export default function JoinRoom() {
 			</form>
 
 			<br />
-			<Redir to="/" content="Return to Main Menu"></Redir>
+
+			
+			{ !state ? null :
+				<Redir to="/home" content="Return to Main Menu" state={{username: state.username}}></Redir>
+			}
 		</>
 	)
 }

@@ -1,6 +1,6 @@
 // React
 import { useEffect, useState } from "react";
-import { NavigateFunction, useNavigate } from "react-router-dom";
+import { NavigateFunction, useLocation, useNavigate } from "react-router-dom";
 
 // Socket
 import { io, Socket } from "socket.io-client";
@@ -9,7 +9,7 @@ import { io, Socket } from "socket.io-client";
 import Redir from "./Redir";
 
 // Handles the client-server connection
-const socketEvents = (socketData: Socket, navigate: NavigateFunction) => {
+const socketEvents = (socketData: Socket, navigate: NavigateFunction, state: { username: string }) => {
 	const socket = socketData;
 
 	// Log when connected
@@ -19,7 +19,7 @@ const socketEvents = (socketData: Socket, navigate: NavigateFunction) => {
 
 	// Send to room (when room is created)
 	socket.on("res: join-room", (data) => {
-		navigate(`/room/${data.inviteCode}`)
+		navigate(`/room/${data.inviteCode}`, {state: {host: true, username: state.username}})
 	});
 };
 
@@ -34,19 +34,27 @@ export default function CreateRoom() {
 	
 	// Redirect function (for to-be-created room)
 	const navigate = useNavigate();
+	const { state } = useLocation();
+
+	// If no 'username' in state, redirect to login page (/)
+	useEffect(() => {
+		if (!state?.username) {
+			navigate("/");
+		}
+	}, [state, navigate])
 
 	// Setup the socket connection
 	useEffect(() => {
 		const socket = io("http://localhost:3001");
 		setSocket(socket);
 
-		socketEvents(socket, navigate);
+		socketEvents(socket, navigate, state);
 
 		// Cleanup on component unmount
 		return () => {
 			socket.disconnect();
 		};
-	}, [navigate]);
+	}, [navigate, state]);
 
 	function updateFormInfo(e: React.ChangeEvent<HTMLInputElement>) {
 		const {name, value} = e.target;
@@ -58,7 +66,7 @@ export default function CreateRoom() {
 		
 		// Request to create the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket.emit("req: create-room", formInfo);
+		socket.emit("req: create-room", {roomInfo: formInfo, host: state.username});
 	}
 
 	return (
@@ -77,7 +85,10 @@ export default function CreateRoom() {
 				<input type="submit" value="Create Room" />
 			</form>
 
-			<Redir to="/" content="Return to Main Menu"></Redir>
+			{ !state ? null :
+				<Redir to="/home" content="Return to Main Menu" state={{username: state.username}}></Redir>
+			}
+			
 		</>
 	)
 }

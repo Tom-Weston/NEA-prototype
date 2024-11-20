@@ -7,7 +7,7 @@ import TempDB from './Classes/TempDB.js';
 import RoomHandler from './Classes/RoomHandler.js'
 
 TempDB.init();
-RoomHandler.init();
+
 
 const app = express();
 const server = http.createServer(app);
@@ -30,6 +30,8 @@ const io = new Server(server, {
 	}
 });
 
+RoomHandler.init(io);
+
 io.on("connection", (socket) => {
 	// console.log("User connected.");
 
@@ -41,9 +43,15 @@ io.on("connection", (socket) => {
 		RoomHandler.GetRoomData(socket, room);
 	})
 
-	socket.on('req: create-room', (roomInfo) => {
-		RoomHandler.CreateRoom(socket, roomInfo);
+	socket.on('req: create-room', ({roomInfo, host}) => {
+		RoomHandler.CreateRoom(socket, roomInfo, host);
 	})
+
+	socket.on("req: next-question", ({room, name}) => {
+		// console.log("IN ROOM")
+		// console.log(io.in(room));
+		RoomHandler.NextQuestion(io, room, name);
+	});
 });
 
 server.listen(PORT, () => {

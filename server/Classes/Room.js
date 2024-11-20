@@ -1,17 +1,21 @@
 import TempDB from "./TempDB.js";
 
 export default class Room {
-	constructor(socket, title, size, inviteCode, questions) {		
-		// Socket (client-server connection)
-		this.socket = socket;
+	constructor(socket, hostID, title, size, inviteCode, questions) {	
+		// Join host socket to room
+		socket.join(this.inviteCode);
 
-		console.log(this.socket.id);
+		// [room id got in init()]
+		this.id;
 
-		// Store main room information (incl. host account ID)
+		// Store main room information
 		this.title = title;
-		this.size = size;
-		this.host = socket.id
+		this.maxSize = size;
 		this.inviteCode = inviteCode
+
+		// Participants (sockets)
+		this.host = hostID;
+		this.guests = [];
 
 		// Store all room questions (& qIndex tracker)
 		this.questions = questions;
@@ -22,9 +26,6 @@ export default class Room {
 		
 		// Redirect host to room
 		socket.emit("res: join-room", {inviteCode: inviteCode});
-
-		// Then handle client-server events
-		this.HandleRoomEvents();
 	}
 
 	async init() {
@@ -32,22 +33,19 @@ export default class Room {
 		await TempDB.run(`
 		INSERT INTO Room (title, inviteCode, maxSize, hostAccountID)
 		VALUES (?, ?, ?, ?)`,
-		[this.title, this.inviteCode, this.size, this.socket.id])
+		[this.title, this.inviteCode, this.maxSize, this.host])
+
+		// Get room id
+		this.id = (await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [this.inviteCode])).id;
 		
-		console.log(`---------------> [${this.inviteCode}] NEW ROOM (${this.size}) <---------------`);
-        console.log(`Host: '${this.socket.id}' | Title: ${this.title}\n`);
+		// Create connection between host and room
+		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [this.id, this.host])
+
+		console.log(`---------------> [${this.inviteCode}] NEW ROOM (1 / ${this.maxSize}) <---------------`);
+        console.log(`Host: '${this.host}' | Title: ${this.title}\n`);
 	}
 
-	async HandleRoomEvents() {
-		this.socket.on("req: room-data", () => {
-			socket.emit("res: room-data", {title: this.title, question: this.questions[this.qIndex]});
-		});
-
-		this.socket.on("req: question-data", () => {
-			socket.emit("res: question-data", this.questions[this.qIndex]);
-		});
-	}
-
+	// Gets room title and current question data
 	async GetRoomData() {
 		return {
 			title: this.title,
@@ -55,7 +53,37 @@ export default class Room {
 		}
 	}
 
+	// Gets the information for the next question
+	async GetNextQuestion() {
+		// Increment pointer to next question
+		this.qIndex += 1
+
+		// Get data from question & return
+		const roomData = await this.GetRoomData();
+		return roomData;
+	}
+
+	async JoinRoom(socket, accountID) {
+		// Reject if guest list is full
+		if (this.guests.length + 1 >= this.maxSize) { return }
+
+		// Join socket to room
+		socket.join(this.inviteCode);
+
+		// Add to guest list
+		this.guests.push(accountID);
+
+		// Join room client-side
+		socket.emit('res: join-room', {inviteCode: this.inviteCode});
+	}
+
+	// [PRIVATE] Gets the information for the current question
 	async GetCurrentQuestion() {
 		return this.questions[this.qIndex]
+	}
+
+	// Check if the user is the host of the room
+	async CheckIfHost(accountID) {
+		return accountID == this.host
 	}
 }

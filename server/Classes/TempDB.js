@@ -44,24 +44,6 @@ export default class TempDB {
 					accountID STRING,
 					PRIMARY KEY(roomID, accountID)
 				);
-
-				CREATE TABLE IF NOT EXISTS Question (
-					id INTEGER NOT NULL,
-					count INTEGER NOT NULL,
-					title TEXT NOT NULL,
-					creationTime BIGINTEGER NOT NULL,
-					roomID INTEGER NOT NULL,
-					PRIMARY KEY (id),
-					FOREIGN KEY (roomID) REFERENCES Room(id)
-				);
-
-				CREATE TABLE IF NOT EXISTS Option (
-					id INTEGER NOT NULL,
-					name TEXT NOT NULL,
-					questionID INTEGER NOT NULL,
-					PRIMARY KEY (id),
-					FOREIGN KEY (questionID) REFERENCES Question(id)
-				);
 			`);
 		}
 	}

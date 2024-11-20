@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 
 import { io, Socket } from "socket.io-client";
+import Redir from "./Redir";
 
 // Handles the client-server connection
 const socketEvents = (socketData: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) => {
@@ -30,44 +31,81 @@ type RoomData = {
 }
 
 export default function Room() {
-	const [socket, setSocket] = useState<Socket>(io());
+	const [socket, setSocket] = useState<Socket>(io("http://localhost:3001"));
 	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}});
+	const [isHost, setIsHost] = useState<boolean>(false);
 
-	const { id } = useParams();
+	const { roomCode } = useParams();
+	const navigate = useNavigate();
+	const { state } = useLocation();
 	
+	// If no 'username' in state, redirect to login page (/)
+	useEffect(() => {
+		if (!state?.username) {
+			navigate("/");
+		}
+	}, [state, navigate])
+
 	// Setup the socket connection
+	// NOTE: Adding 'socket' as a dependency recursively lags the
+	// entire PC to unresponsiveness
 	useEffect(() => {
 		const socketData = io("http://localhost:3001");
-		setSocket(socketData);
+		setSocket(socketData)
 
 		socketEvents(socketData, setRoomData);
 
 		// Cleanup on component unmount
 		return () => {
-			socketData.disconnect();
+			socket.disconnect();
 		};
 	}, []);
 
 	// Get room data when user joins the room
 	useEffect(() => {
 		console.log("Requesting data")
-		socket.emit("req: room-data", id)
-	}, [socket, id]);
+		socket.emit("req: room-data", roomCode)
+	}, [socket, roomCode, state]);
+
+	// Check if user is host, and if so show host options
+	useEffect(() => {
+		setIsHost(state.host);
+	}, [state])
+
+	function nextQuestion() {
+		console.log("getting next question");
+		socket.emit("req: next-question", {room: roomCode, name: state.username})
+	}
+
+	function closeRoom() {
+		
+	}
 
 	return (
 		<>
-			<div className="centre-text">Room {id}!</div>
+			<div className="centre-text">{roomCode}</div>
 			<div className="centre-text">
 				{(!roomData) ? <h1>no data</h1> :
 				<>
 					<h1>{roomData.title}</h1>
 					<h2>{roomData.question.title}</h2>
 					<div className="list-col">
-						{roomData.question.options.map((option => <button style={{width: "200px"}}>{option}</button> ))}
+						{roomData.question.options.map((option => <button key={option} style={{width: "200px"}}>{option}</button> ))}
 					</div>
 				</>}
-				
 			</div>
+			
+			{(isHost) ?
+			// If the host, display host options
+			<div className="list-row" style={{marginTop: "20px"}}>
+				<button onClick={() => nextQuestion()}>Next Question</button>
+				<button onClick={() => closeRoom()}>Close Room</button>
+			</div>
+			:
+			// Otherwise display leave button
+			// [NEED TO IMPLEMENT]
+			!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: state.username}}></Redir>
+			}
 		</>
 	);
 }

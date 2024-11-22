@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import Redir from "./Redir";
+import SocketInfo from "./SocketInfo";
 
 // Handles the client-server connection
-const socketEvents = (socketData: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) => {
-	const socket = socketData;
+const socketEvents = (socket: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) => {
 
 	// Log when connected
 	socket.on("connect", () => {
@@ -31,7 +31,7 @@ type RoomData = {
 }
 
 export default function Room() {
-	const [socket, setSocket] = useState<Socket>(io("http://localhost:3001"));
+	const [socket, setSocket] = useState<Socket>();
 	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}});
 	const [isHost, setIsHost] = useState<boolean>(false);
 
@@ -50,21 +50,16 @@ export default function Room() {
 	// NOTE: Adding 'socket' as a dependency recursively lags the
 	// entire PC to unresponsiveness
 	useEffect(() => {
-		const socketData = io("http://localhost:3001");
-		setSocket(socketData)
-
-		socketEvents(socketData, setRoomData);
-
-		// Cleanup on component unmount
-		return () => {
-			socket.disconnect();
-		};
-	}, []);
+		const socket = SocketInfo.inst.socket;
+		setSocket(socket);
+		
+		socketEvents(socket, setRoomData);
+	});
 
 	// Get room data when user joins the room
 	useEffect(() => {
 		console.log("Requesting data")
-		socket.emit("req: room-data", roomCode)
+		socket?.emit("req: room-data", roomCode)
 	}, [socket, roomCode, state]);
 
 	// Check if user is host, and if so show host options
@@ -74,7 +69,10 @@ export default function Room() {
 
 	function nextQuestion() {
 		console.log("getting next question");
-		socket.emit("req: next-question", {room: roomCode, name: state.username})
+		socket?.emit("req: next-question", {room: roomCode, name: state.username});
+
+		// need to somehow get this socket to realise that there is a response
+		// no clue atm, please fix 🙏
 	}
 
 	function closeRoom() {

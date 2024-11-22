@@ -2,9 +2,6 @@
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider} from 'react-router-dom';
 
-// Socket.io
-import { io } from 'socket.io-client';
-
 // Components
 import Home from './components/Home';
 import CreateRoom from './components/CreateRoom';
@@ -14,10 +11,6 @@ import Room from './components/Room';
 // Styling
 import './index.css';
 import Login from './components/Login';
-
-// Import the socket from here, then make all components call "getSocket" to get the socket from here
-// Have a look into "hydration" specifically "hydrationData in createBrowserRouter"?
-const socket = io()
 
 // Learnt react router system through https://www.youtube.com/watch?v=oTIJunBa6MA&ab_channel=CosdenSolutions
 const router = createBrowserRouter([

@@ -3,10 +3,11 @@ import { useState, useEffect, FormEvent} from 'react';
 import { NavigateFunction, useLocation, useNavigate } from 'react-router-dom';
 
 // Socket
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 
 // Components
 import Redir from "./Redir";
+import SocketInfo from './SocketInfo';
 
 const socketEvents = (socketData: Socket , navigate: NavigateFunction) => {
 	const socket = socketData;
@@ -23,7 +24,7 @@ const socketEvents = (socketData: Socket , navigate: NavigateFunction) => {
 
 
 export default function JoinRoom() {
-	const [socket, setSocket] = useState<Socket>(io());
+	const [socket, setSocket] = useState<Socket>();
 	const [room, setRoom] = useState("");
 
 	const navigate = useNavigate();
@@ -36,19 +37,19 @@ export default function JoinRoom() {
 		}
 	}, [state, navigate])
 	
-	// The socket is saved as a state so that it can
-	// be disconnected when the user redirects
+	// Setup the socket connection
 	useEffect(() => {
-		const socketData = io("http://localhost:3001")
-		setSocket(socketData);
+		const socket = SocketInfo.inst.socket;
+		setSocket(socket);
 
-		socketEvents(socketData, navigate);
-
-		// Cleanup on component unmount
-		return () => {
-			socketData.disconnect();
-		};
+		socketEvents(socket, navigate);
 	}, [navigate]);
+
+	useEffect(() => {
+		if (socket) {
+			console.log(socket.id);
+		}
+	}, [socket])
 	
 	// Called when the form is submitted
 	function joinRoom(e: FormEvent<HTMLFormElement>) {
@@ -56,7 +57,7 @@ export default function JoinRoom() {
 
 		// Request to join the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket.emit("req: join-room", room);
+		socket?.emit("req: join-room", room);
 	}
 
 	return (

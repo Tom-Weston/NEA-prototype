@@ -24,15 +24,12 @@ export default class RoomHandler {
 		const room = await this.rooms[roomCode];
 		const isHost = await room.CheckIfHost(name);
 
-		console.log("==============");
-		console.log(room, isHost)
-
 		if (isHost) {
 			const roomData = await room.GetNextQuestion()
 			console.log("Room Data:")
 			console.log(roomData)
 
-			io.in(roomCode).emit("res: room-data", roomData)
+			this.io.sockets.in(roomCode).emit("res: room-data", roomData)
 		}
 	}
 

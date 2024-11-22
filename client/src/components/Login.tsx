@@ -1,11 +1,28 @@
 // React
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Socket.io
+import { Socket } from "socket.io-client";
+
+// Components
+import SocketInfo from "./SocketInfo";
+
 export default function Home() {
+	const [socket, setSocket] = useState<Socket>()
 	const [username, setUsername] = useState<string>()
 
 	const navigate = useNavigate();
+
+	useEffect(() => {
+		setSocket(SocketInfo.inst.socket); 
+	}, [setSocket])
+
+	useEffect(() => {
+		if (socket) {
+			console.log(socket.id);
+		}
+	}, [socket])
 
 	function updateUsername(e: React.ChangeEvent<HTMLInputElement>) {
 		const {value} = e.target;

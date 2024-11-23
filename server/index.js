@@ -48,9 +48,9 @@ io.on("connection", (socket) => {
 	})
 
 	socket.on("req: next-question", ({room, name}) => {
-		// console.log("IN ROOM")
-		// console.log(io.in(room));
-		RoomHandler.NextQuestion(io, room, name);
+		console.log("NEXT QUESTION DATA: ")
+		console.log(room, name);
+		RoomHandler.NextQuestion(room, name);
 	});
 });
 

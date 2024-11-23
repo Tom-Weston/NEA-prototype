@@ -10,12 +10,12 @@ import Redir from "./Redir";
 import SocketInfo from "./SocketInfo";
 
 // Handles the client-server connection
-const socketEvents = (socketData: Socket, navigate: NavigateFunction, state: { username: string }) => {
+function socketEvents (socketData: Socket, navigate: NavigateFunction, state: { username: string }) {
 	const socket = socketData;
 
 	// Log when connected
 	socket.on("connect", () => {
-		console.log("Connected to server");
+		console.log(`Connected to server [${socket.id}]`);
 	});
 
 	// Send to room (when room is created)
@@ -30,7 +30,7 @@ interface FormInfo {
 }
 
 export default function CreateRoom() {
-	const [socket, setSocket] = useState<Socket>();
+	const socket = SocketInfo.inst.socket;
 	const [formInfo, setFormInfo] = useState<FormInfo>({template: "", size: ""})
 	
 	// Redirect function (for to-be-created room)
@@ -46,17 +46,8 @@ export default function CreateRoom() {
 
 	// Setup the socket connection
 	useEffect(() => {
-		const socket = SocketInfo.inst.socket;
-		setSocket(socket);
-
 		socketEvents(socket, navigate, state);
-	}, [navigate, state]);
-
-	useEffect(() => {
-		if (socket) {
-			console.log(socket.id);
-		}
-	}, [socket])
+	}, [socket, navigate, state]);
 
 	function updateFormInfo(e: React.ChangeEvent<HTMLInputElement>) {
 		const {name, value} = e.target;
@@ -68,7 +59,7 @@ export default function CreateRoom() {
 		
 		// Request to create the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket?.emit("req: create-room", {roomInfo: formInfo, host: state.username});
+		socket.emit("req: create-room", {roomInfo: formInfo, host: state.username});
 	}
 
 	return (

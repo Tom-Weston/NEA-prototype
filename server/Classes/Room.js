@@ -2,9 +2,6 @@ import TempDB from "./TempDB.js";
 
 export default class Room {
 	constructor(socket, hostID, title, size, inviteCode, questions) {	
-		// Join host socket to room
-		socket.join(this.inviteCode);
-
 		// [room id got in init()]
 		this.id;
 
@@ -24,8 +21,9 @@ export default class Room {
 		// Add Room into DB
 		this.init();
 		
-		// Redirect host to room
-		socket.emit("res: join-room", {inviteCode: inviteCode});
+		// Join host socket to room (socket-side & redirect client-side)
+		socket.join(this.inviteCode);
+		socket.emit("res: join-room", {inviteCode: this.inviteCode});
 	}
 
 	async init() {
@@ -67,11 +65,11 @@ export default class Room {
 		// Reject if guest list is full
 		if (this.guests.length + 1 >= this.maxSize) { return }
 
-		// Join socket to room
-		socket.join(this.inviteCode);
-
 		// Add to guest list
 		this.guests.push(accountID);
+
+		// Join socket to room
+		await socket.join(this.inviteCode);
 
 		// Join room client-side
 		socket.emit('res: join-room', {inviteCode: this.inviteCode});

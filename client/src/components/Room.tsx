@@ -6,11 +6,11 @@ import Redir from "./Redir";
 import SocketInfo from "./SocketInfo";
 
 // Handles the client-server connection
-const socketEvents = (socket: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) => {
+function socketEvents(socket: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) {
 
 	// Log when connected
 	socket.on("connect", () => {
-		console.log("Connected to server");
+		console.log(`Connected to server [${socket.id}]`);
 	});
 
 	// When the next question's data is sent over
@@ -31,15 +31,15 @@ type RoomData = {
 }
 
 export default function Room() {
-	const [socket, setSocket] = useState<Socket>();
+	const socket = SocketInfo.inst.socket;
 	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}});
 	const [isHost, setIsHost] = useState<boolean>(false);
 
 	const { roomCode } = useParams();
-	const navigate = useNavigate();
 	const { state } = useLocation();
 	
 	// If no 'username' in state, redirect to login page (/)
+	const navigate = useNavigate();
 	useEffect(() => {
 		if (!state?.username) {
 			navigate("/");
@@ -50,17 +50,14 @@ export default function Room() {
 	// NOTE: Adding 'socket' as a dependency recursively lags the
 	// entire PC to unresponsiveness
 	useEffect(() => {
-		const socket = SocketInfo.inst.socket;
-		setSocket(socket);
-		
 		socketEvents(socket, setRoomData);
-	});
+	}, [socket]);
 
 	// Get room data when user joins the room
 	useEffect(() => {
 		console.log("Requesting data")
-		socket?.emit("req: room-data", roomCode)
-	}, [socket, roomCode, state]);
+		socket.emit("req: room-data", roomCode)
+	}, [socket, roomCode]);
 
 	// Check if user is host, and if so show host options
 	useEffect(() => {
@@ -69,7 +66,7 @@ export default function Room() {
 
 	function nextQuestion() {
 		console.log("getting next question");
-		socket?.emit("req: next-question", {room: roomCode, name: state.username});
+		socket.emit("req: next-question", {room: roomCode, name: state.username});
 
 		// need to somehow get this socket to realise that there is a response
 		// no clue atm, please fix 🙏

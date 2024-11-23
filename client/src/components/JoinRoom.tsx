@@ -9,22 +9,21 @@ import { Socket } from 'socket.io-client';
 import Redir from "./Redir";
 import SocketInfo from './SocketInfo';
 
-const socketEvents = (socketData: Socket , navigate: NavigateFunction) => {
-	const socket = socketData;
+function socketEvents(socket: Socket , navigate: NavigateFunction, state: { username: string }) {
 	// Log when connected
 	socket.on("connect", () => {
-		console.log("Connected to server");
+		console.log(`Connected to server [${socket.id}]`);
 	});
 
 	// When room data is sent over (send to room)
 	socket.on("res: join-room", (data) => {
-		navigate(`/room/${data.inviteCode}`, {state: {host: false}})
+		navigate(`/room/${data.inviteCode}`, {state: {host: false, username: state.username}})
 	});
 };
 
 
 export default function JoinRoom() {
-	const [socket, setSocket] = useState<Socket>();
+	const socket = SocketInfo.inst.socket;
 	const [room, setRoom] = useState("");
 
 	const navigate = useNavigate();
@@ -39,17 +38,8 @@ export default function JoinRoom() {
 	
 	// Setup the socket connection
 	useEffect(() => {
-		const socket = SocketInfo.inst.socket;
-		setSocket(socket);
-
-		socketEvents(socket, navigate);
-	}, [navigate]);
-
-	useEffect(() => {
-		if (socket) {
-			console.log(socket.id);
-		}
-	}, [socket])
+		socketEvents(socket, navigate, state);
+	}, [socket, navigate, state]);
 	
 	// Called when the form is submitted
 	function joinRoom(e: FormEvent<HTMLFormElement>) {
@@ -57,7 +47,7 @@ export default function JoinRoom() {
 
 		// Request to join the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket?.emit("req: join-room", room);
+		socket.emit("req: join-room", room);
 	}
 
 	return (

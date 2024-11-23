@@ -9,27 +9,37 @@ import FoodTemplate from '../templates/Food.js';
 export default class RoomHandler {
 	
 	static async init(io) {
+		// As, for security reasons, the server (io) shouldn't be
+		// added into every single room, its put here instead
 		this.io = io;
+
+		// Keeps track of all currently running rooms
 		this.rooms = {};
 	}
 
 	static async GetRoomData(socket, inviteCode) {
 		const room = this.rooms[inviteCode];
+		if (!room) {
+			console.error(`Room ${inviteCode} does not exist!`);
+			return;
+		};
+
 		const roomData = await room.GetRoomData();
 
 		socket.emit("res: room-data", roomData);
 	}
 
-	static async NextQuestion(io, roomCode, name) {
+	static async NextQuestion(roomCode, name) {
+		// Get room and confirm host privileges
 		const room = await this.rooms[roomCode];
 		const isHost = await room.CheckIfHost(name);
 
 		if (isHost) {
+			// Get question data
 			const roomData = await room.GetNextQuestion()
-			console.log("Room Data:")
-			console.log(roomData)
 
-			this.io.sockets.in(roomCode).emit("res: room-data", roomData)
+			// Update all users in room with new question
+			this.io.to(roomCode).emit("res: room-data", roomData)
 		}
 	}
 

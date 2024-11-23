@@ -35,14 +35,19 @@ export default function Room() {
 	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}});
 	const [isHost, setIsHost] = useState<boolean>(false);
 
+	// Change to accountID post-prototype
+	const [username, setUsername] = useState<string>("no username?");
+
 	const { roomCode } = useParams();
-	const { state } = useLocation();
-	
+
 	// If no 'username' in state, redirect to login page (/)
+	const { state } = useLocation();
 	const navigate = useNavigate();
 	useEffect(() => {
 		if (!state?.username) {
 			navigate("/");
+		} else {
+			setUsername(state.username)
 		}
 	}, [state, navigate])
 
@@ -64,9 +69,19 @@ export default function Room() {
 		setIsHost(state.host);
 	}, [state])
 
+	function voteForOption(e: React.MouseEvent<HTMLButtonElement>) {
+		// Get value from event element
+		// (from: https://stackoverflow.com/questions/42066421/property-value-does-not-exist-on-type-eventtarget)
+		const option = (e.target as HTMLButtonElement).value;
+
+		// Send vote over to server
+		// (need to make sure votes aren't duplicates)
+		socket.emit("req: submit-vote", {room: roomCode, option: option, name: username});
+	}
+
 	function nextQuestion() {
 		console.log("getting next question");
-		socket.emit("req: next-question", {room: roomCode, name: state.username});
+		socket.emit("req: next-question", {room: roomCode, name: username});
 
 		// need to somehow get this socket to realise that there is a response
 		// no clue atm, please fix 🙏
@@ -85,7 +100,9 @@ export default function Room() {
 					<h1>{roomData.title}</h1>
 					<h2>{roomData.question.title}</h2>
 					<div className="list-col">
-						{roomData.question.options.map((option => <button key={option} style={{width: "200px"}}>{option}</button> ))}
+						{roomData.question.options.map((option =>
+							<button value={option} onClick={(e) => voteForOption(e)} key={option} style={{width: "200px"}}>{option}</button>
+						))}
 					</div>
 				</>}
 			</div>
@@ -99,7 +116,7 @@ export default function Room() {
 			:
 			// Otherwise display leave button
 			// [NEED TO IMPLEMENT]
-			!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: state.username}}></Redir>
+			!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: username}}></Redir>
 			}
 		</>
 	);

@@ -18,6 +18,9 @@ export default class Room {
 		this.questions = questions;
 		this.qIndex = 0;
 
+		// Store all votes ({question: {user: vote, ...}, ...})
+		this.votes = {}
+
 		// Add Room into DB
 		this.init();
 		
@@ -26,6 +29,7 @@ export default class Room {
 		socket.emit("res: join-room", {inviteCode: this.inviteCode});
 	}
 
+	// Initialise room DB-side
 	async init() {
 		// Create room in DB
 		await TempDB.run(`
@@ -43,24 +47,6 @@ export default class Room {
         console.log(`Host: '${this.host}' | Title: ${this.title}\n`);
 	}
 
-	// Gets room title and current question data
-	async GetRoomData() {
-		return {
-			title: this.title,
-			question: await this.GetCurrentQuestion()
-		}
-	}
-
-	// Gets the information for the next question
-	async GetNextQuestion() {
-		// Increment pointer to next question
-		this.qIndex += 1
-
-		// Get data from question & return
-		const roomData = await this.GetRoomData();
-		return roomData;
-	}
-
 	async JoinRoom(socket, accountID) {
 		// Reject if guest list is full
 		if (this.guests.length + 1 >= this.maxSize) { return }
@@ -73,6 +59,38 @@ export default class Room {
 
 		// Join room client-side
 		socket.emit('res: join-room', {inviteCode: this.inviteCode});
+	}
+
+	// Gets the information for the next question
+	async GetNextQuestion() {
+		// Increment pointer to next question
+		this.qIndex += 1
+
+		if (this.qIndex < this.questions.length) {
+			// Get data from question & return
+			const roomData = await this.GetRoomData();
+			return roomData;
+		} else {
+			// No more questions, so close the room!
+			return {title: this.title, question: {title: "CLOSING ROOM", options: ["now to handle closing the room!"]}}
+		}
+	}
+
+	// Handle a new vote submission by a user
+	async SubmitVote(accountID, votedOption) {
+		// Update question-specific voting data
+		const questionVoteData = {...this.votes[this.questions[this.qIndex].title], [accountID]: votedOption}
+
+		// Update previous voting store with new data
+		this.votes = {...this.votes, [this.questions[this.qIndex].title]: questionVoteData};
+	}
+
+	// Gets room title and current question data
+	async GetRoomData() {
+		return {
+			title: this.title,
+			question: await this.GetCurrentQuestion()
+		}
 	}
 
 	// [PRIVATE] Gets the information for the current question

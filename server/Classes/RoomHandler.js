@@ -31,7 +31,12 @@ export default class RoomHandler {
 
 	static async NextQuestion(roomCode, name) {
 		// Get room and confirm host privileges
-		const room = await this.rooms[roomCode];
+		const room = this.rooms[roomCode];
+		if (!room) {
+			console.error(`Room ${roomCode} does not exist!`);
+			return;
+		};
+
 		const isHost = await room.CheckIfHost(name);
 
 		if (isHost) {
@@ -58,14 +63,28 @@ export default class RoomHandler {
 	}
 
 	static async JoinRoom(socket, inviteCode, guest) {
+		const room = this.rooms[inviteCode];
+		if (!room) {
+			console.error(`Room ${inviteCode} does not exist!`);
+			return;
+		};
+
         // Create connection between client and room (max 1 connection)
 		const roomID = (await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode])).id;
-		console.log("Room ID:");
-		console.log(roomID);
 		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, guest])
 		
 		// Join room
-		this.rooms[inviteCode].JoinRoom(socket, guest);
+		room.JoinRoom(socket, guest);
+	}
+
+	static async SubmitVote(roomCode, option, name) {
+		const room = this.rooms[roomCode];
+		if (!room) {
+			console.error(`Room ${inviteCode} does not exist!`);
+			return;
+		};
+
+		room.SubmitVote(name, option);
 	}
 
 	static async GenerateInviteCode() {
@@ -75,7 +94,7 @@ export default class RoomHandler {
         
         // Repeat until the code is valid for use
         var validCode = false;
-        while (!validCode) {;
+        while (!validCode) {
             
             // Create invite code (6 randomised alphanumberic (upper-case) characters)
             for (let i=0; i<6; i++) {

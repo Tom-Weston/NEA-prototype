@@ -52,6 +52,10 @@ io.on("connection", (socket) => {
 		console.log(room, name);
 		RoomHandler.NextQuestion(room, name);
 	});
+
+	socket.on("req: submit-vote", ({room, option, name}) => {
+		RoomHandler.SubmitVote(room, option, name);
+	});
 });
 
 server.listen(PORT, () => {

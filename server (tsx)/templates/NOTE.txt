@@ -1,0 +1,15 @@
+Template Example:
+
+{
+    ROOM-TITLE
+    QUESTION_1: [
+        OPTION_1,
+        OPTION_2,
+        OPTION_3,
+    ],
+
+    QUESTION_2: [
+        OPTION_1,
+        OPTION_2
+    ]
+}

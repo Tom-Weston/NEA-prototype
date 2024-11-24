@@ -1,17 +1,21 @@
 // React
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Components
 import Redir from './Redir';
 
 export default function Home() {
+	const [username, setUsername] = useState<string>("username goes here");
+
+	// Get username
 	const navigate = useNavigate();
 	const { state } = useLocation();
-
-	// If no 'username' in state, redirect to login page (/)
 	useEffect(() => {
-		if (!state?.username) {
+		if (state?.username) {
+			setUsername(state.username);
+		} else {
+			// If no 'username' in state, redirect to login page (/)
 			navigate("/");
 		}
 	}, [state, navigate])
@@ -19,16 +23,16 @@ export default function Home() {
 	return (
 		<>
 			{
-			// Check if the state (username) is present before showing
-			!state ? <></> :
+			// Check if the state (containing username) is present before showing
+			!state ? null :
 			<>
 				<h1>Home</h1>
 				<div className="list-row">
-					<Redir to="/create" content="Create Room" state={{username: state.username}} />
-					<Redir to="/join" content="Join Room" state={{username: state.username}} />
+					<Redir to="/create" content="Create Room" state={{username: username}} />
+					<Redir to="/join" content="Join Room" state={{username: username}} />
 				</div>
 
-				<p>Currently logged in as [{state.username}]</p>
+				<p>Currently logged in as [{username}]</p>
 			</>}
 		</>
 	)

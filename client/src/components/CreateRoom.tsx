@@ -10,7 +10,7 @@ import Redir from "./Redir";
 import SocketInfo from "./SocketInfo";
 
 // Handles the client-server connection
-function socketEvents (socketData: Socket, navigate: NavigateFunction, state: { username: string }) {
+function socketEvents (socketData: Socket, navigate: NavigateFunction, username: string) {
 	const socket = socketData;
 
 	// Log when connected
@@ -20,7 +20,7 @@ function socketEvents (socketData: Socket, navigate: NavigateFunction, state: { 
 
 	// Send to room (when room is created)
 	socket.on("res: join-room", (data) => {
-		navigate(`/room/${data.inviteCode}`, {state: {host: true, username: state.username}})
+		navigate(`/room/${data.inviteCode}`, {state: {host: true, username: username}})
 	});
 };
 
@@ -32,22 +32,25 @@ interface FormInfo {
 export default function CreateRoom() {
 	const socket = SocketInfo.inst.socket;
 	const [formInfo, setFormInfo] = useState<FormInfo>({template: "", size: ""})
-	
-	// Redirect function (for to-be-created room)
-	const navigate = useNavigate();
-	const { state } = useLocation();
+	const [username, setUsername] = useState<string>("username goes here")	
 
-	// If no 'username' in state, redirect to login page (/)
+	const navigate = useNavigate();
+
+	// Get username
+	const { state } = useLocation();
 	useEffect(() => {
-		if (!state?.username) {
+		if (state?.username) {
+			setUsername(state.username);
+		} else {
+			// If no 'username' in state, redirect to login page (/)
 			navigate("/");
 		}
 	}, [state, navigate])
 
 	// Setup the socket connection
 	useEffect(() => {
-		socketEvents(socket, navigate, state);
-	}, [socket, navigate, state]);
+		socketEvents(socket, navigate, username);
+	}, [socket, navigate, username]);
 
 	function updateFormInfo(e: React.ChangeEvent<HTMLInputElement>) {
 		const {name, value} = e.target;
@@ -59,7 +62,7 @@ export default function CreateRoom() {
 		
 		// Request to create the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket.emit("req: create-room", {roomInfo: formInfo, host: state.username});
+		socket.emit("req: create-room", {roomInfo: formInfo, host: username});
 	}
 
 	return (
@@ -79,7 +82,7 @@ export default function CreateRoom() {
 			</form>
 
 			{ !state ? null :
-				<Redir to="/home" content="Return to Main Menu" state={{username: state.username}}></Redir>
+				<Redir to="/home" content="Return to Main Menu" state={{username: username}}></Redir>
 			}
 			
 		</>

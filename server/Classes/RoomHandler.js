@@ -18,7 +18,7 @@ export default class RoomHandler {
 	}
 
 	static async GetRoomData(socket, inviteCode) {
-		const room = this.rooms[inviteCode];
+		const room = await this.rooms[inviteCode];
 		if (!room) {
 			console.error(`Room ${inviteCode} does not exist!`);
 			return;
@@ -31,7 +31,7 @@ export default class RoomHandler {
 
 	static async NextQuestion(roomCode, name) {
 		// Get room and confirm host privileges
-		const room = this.rooms[roomCode];
+		const room = await this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${roomCode} does not exist!`);
 			return;
@@ -63,8 +63,9 @@ export default class RoomHandler {
 	}
 
 	static async JoinRoom(socket, inviteCode, guest) {
-		const room = this.rooms[inviteCode];
+		const room = await this.rooms[inviteCode];
 		if (!room) {
+			console.log(this.rooms);
 			console.error(`Room ${inviteCode} does not exist!`);
 			return;
 		};
@@ -78,7 +79,7 @@ export default class RoomHandler {
 	}
 
 	static async SubmitVote(roomCode, option, name) {
-		const room = this.rooms[roomCode];
+		const room = await this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${inviteCode} does not exist!`);
 			return;

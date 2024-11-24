@@ -24,14 +24,17 @@ function socketEvents(socket: Socket , navigate: NavigateFunction, state: { user
 
 export default function JoinRoom() {
 	const socket = SocketInfo.inst.socket;
-	const [room, setRoom] = useState("");
+	const [room, setRoom] = useState<string>("room code goes here");
+	const [username, setUsername] = useState<string>("username goes here");
 
 	const navigate = useNavigate();
-	const { state } = useLocation();
 
-	// If no 'username' in state, redirect to login page (/)
+	const { state } = useLocation();
 	useEffect(() => {
-		if (!state?.username) {
+		if (state?.username) {
+			setUsername(state.username);
+		} else {
+			// If no 'username' in state, redirect to login page (/)
 			navigate("/");
 		}
 	}, [state, navigate])
@@ -47,7 +50,7 @@ export default function JoinRoom() {
 
 		// Request to join the room
 		// Then wait for "res: join-room" (see socketEvents() function)
-		socket.emit("req: join-room", room);
+		socket.emit("req: join-room", {room: room, name: username});
 	}
 
 	return (
@@ -56,7 +59,7 @@ export default function JoinRoom() {
 
 			{/* Form info (invite code) for joining a room */}
 			<form onSubmit={(e) => joinRoom(e)}>
-				<input name="inviteCode" type="text" placeholder="Invite Code" onChange={(e) => setRoom(e.target.value)} required />
+				<input name="inviteCode" type="text" placeholder="Invite Code" onChange={(e) => setRoom(e.target.value)} style={{textAlign: 'center'}} required />
 				<input type="submit" value="Join Room" />
 			</form>
 

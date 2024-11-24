@@ -1,7 +1,11 @@
+// React
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 
+// Socket
 import { Socket } from "socket.io-client";
+
+// Components
 import Redir from "./Redir";
 import SocketInfo from "./SocketInfo";
 
@@ -36,18 +40,19 @@ export default function Room() {
 	const [isHost, setIsHost] = useState<boolean>(false);
 
 	// Change to accountID post-prototype
-	const [username, setUsername] = useState<string>("no username?");
+	const [username, setUsername] = useState<string>("username goes here");
 
 	const { roomCode } = useParams();
 
-	// If no 'username' in state, redirect to login page (/)
+	// Get username
 	const { state } = useLocation();
 	const navigate = useNavigate();
 	useEffect(() => {
-		if (!state?.username) {
-			navigate("/");
+		if (state?.username) {
+			setUsername(state.username);
 		} else {
-			setUsername(state.username)
+			// If no 'username' in state, redirect to login page (/)
+			navigate("/");
 		}
 	}, [state, navigate])
 

@@ -2,21 +2,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Socket.io
-import { Socket } from "socket.io-client";
-
 // Components
 import SocketInfo from "./SocketInfo";
 
 export default function Home() {
-	const [socket, setSocket] = useState<Socket>()
+	const socket = SocketInfo.inst.socket;
 	const [username, setUsername] = useState<string>()
 
 	const navigate = useNavigate();
-
-	useEffect(() => {
-		setSocket(SocketInfo.inst.socket); 
-	}, [setSocket])
 
 	useEffect(() => {
 		if (socket) {

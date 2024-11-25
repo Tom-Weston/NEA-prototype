@@ -15,7 +15,6 @@ export default class TempDB {
 			// Create database connection instance (if it doesn't already exist)
 			this.db = new SQLite3("./TEMPDB/Database.db");
 
-			console.log(typeof(this.db));
 			console.log(`\n=====< [/] DATABASE INITIALISED >=====\n`);
 			
 			// Enables using WHERE statements with foreign keys

@@ -39,15 +39,15 @@ export default class RoomHandler {
 
 
 	static async NextQuestion(roomCode: string, accountID: string) {
-		// Get room and confirm host privileges
+		// Get room
 		const room = this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${roomCode} does not exist!`);
 			return;
 		};
 
+		// Confirm host privileges
 		const isHost = await room.CheckIfHost(accountID);
-
 		if (isHost) {
 			// Get question data
 			const roomData = await room.GetNextQuestion()
@@ -56,7 +56,21 @@ export default class RoomHandler {
 			this.io.to(roomCode).emit("res: room-data", roomData)
 		}
 	}
+	
+	static async CloseRoom(roomCode: string, accountID: string) {
+		// Get room
+		const room = this.rooms[roomCode];
+		if (!room) {
+			console.error(`Room ${roomCode} does not exist!`);
+			return;
+		};
 
+		// Confirm host privileges
+		const isHost = await room.CheckIfHost(accountID);
+		if (isHost) {
+			room.CloseRoom();
+		}
+	}
 
 	static async CreateRoom(socket: Socket, roomData: {template: string, size: number}, hostID: string) {
 		// Template detection system

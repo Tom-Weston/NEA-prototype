@@ -31,12 +31,13 @@ type RoomData = {
 	question: {
 		title: string,
 		options: string[]
-	}
+	},
+	lastQuestion: boolean
 }
 
 export default function Room() {
 	const socket = SocketInfo.inst.socket;
-	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}});
+	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}, lastQuestion: false});
 	const [isHost, setIsHost] = useState<boolean>(false);
 
 	// Change to accountID post-prototype
@@ -87,21 +88,19 @@ export default function Room() {
 	function nextQuestion() {
 		console.log("getting next question");
 		socket.emit("req: next-question", {room: roomCode, name: username});
-
-		// need to somehow get this socket to realise that there is a response
-		// no clue atm, please fix 🙏
 	}
 
 	function closeRoom() {
-		
+		console.log("Closing room")
+		socket.emit("req: close-room", {room: roomCode, name: username})
 	}
 
 	return (
 		<>
 			<div className="centre-text">{roomCode}</div>
-			<div className="centre-text">
-				{(!roomData) ? <h1>no data</h1> :
-				<>
+			{(!roomData) ? <h1>no data</h1> :
+			<>
+				<div className="centre-text">
 					<h1>{roomData.title}</h1>
 					<h2>{roomData.question.title}</h2>
 					<div className="list-col">
@@ -109,19 +108,22 @@ export default function Room() {
 							<button value={option} onClick={(e) => voteForOption(e)} key={option} style={{width: "200px"}}>{option}</button>
 						))}
 					</div>
-				</>}
-			</div>
-			
-			{(isHost) ?
-			// If the host, display host options
-			<div className="list-row" style={{marginTop: "20px"}}>
-				<button onClick={() => nextQuestion()}>Next Question</button>
-				<button onClick={() => closeRoom()}>Close Room</button>
-			</div>
-			:
-			// Otherwise display leave button
-			// [NEED TO IMPLEMENT]
-			!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: username}}></Redir>
+				</div>
+				
+				{(isHost) ?
+				// If the host, display host options
+				<div className="list-row" style={{marginTop: "20px"}}>
+					{(roomData.lastQuestion) ? null :
+						<button onClick={() => nextQuestion()}>Next Question</button>
+					}
+					<button onClick={() => closeRoom()}>Close Room</button>
+				</div>
+				:
+				// Otherwise display leave button
+				// [NEED TO IMPLEMENT]
+				!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: username}}></Redir>
+				}
+			</>
 			}
 		</>
 	);

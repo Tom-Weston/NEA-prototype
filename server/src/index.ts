@@ -34,8 +34,8 @@ const io = new Server(server, {
 
 RoomHandler.init(io);
 
+// Handle socket events (from connection)
 io.on("connection", (socket) => {
-
 	socket.on('req: join-room', ({room, name}) => {
 		RoomHandler.JoinRoom(socket, room, name);
 	})
@@ -55,8 +55,13 @@ io.on("connection", (socket) => {
 	socket.on("req: submit-vote", ({room, option, name}) => {
 		RoomHandler.SubmitVote(room, option, name);
 	});
+
+	socket.on("req: close-room", ({room, name}) => {
+		RoomHandler.CloseRoom(room, name);
+	})
 });
 
+// Attach listeners to port
 server.listen(PORT, () => {
 	console.log(`Listening on *:${PORT}`);
 });

@@ -1,4 +1,7 @@
+// Socket
 import { Socket } from "socket.io";
+
+// Components
 import TempDB from "./TempDB";
 
 type Question = {
@@ -6,11 +9,24 @@ type Question = {
 	options: string[];
 }
 
-type QuestionVotes = {
-	[question: string]: {
-		[accountID: string]: string;
-	}
+type VoteData = {
+	accountID: string,
+	option: string,
+	timestamp: number
 }
+
+type QuestionData = 
+	{
+		title: string,
+		startTime: number,
+
+		// Uses a dictionary (hash map) instead of an array
+		// to remove duplicate entries (vote skew)
+		votes: {
+			[accountID: string]: VoteData
+		}
+	}[]
+
 
 export default class Room {
 	private id: string;
@@ -25,7 +41,7 @@ export default class Room {
 	private questions: Question[];
 	private qIndex: number;
 
-	private votes: QuestionVotes;
+	private analytics: QuestionData;
 
 	constructor(socket: Socket, hostID: string, title: string, size: number, inviteCode: string, questions: Question[]) {	
 		// [this.id got in init()]
@@ -44,12 +60,15 @@ export default class Room {
 		this.questions = questions;
 		this.qIndex = 0;
 
-		// Store all votes ({question: {user: vote, ...}, ...})
-		this.votes = {} as QuestionVotes		
+		// Store all voting data
+		this.analytics = [] as QuestionData		
 
 		// Add Room into DB
 		this.init();
 		
+		// Update analytics for current (first) question
+		this.UpdateQuestionAnalytics();
+
 		// Join host socket to room (socket-side & redirect client-side)
 		socket.join(this.inviteCode);
 		socket.emit("res: join-room", {inviteCode: this.inviteCode});
@@ -96,9 +115,14 @@ export default class Room {
 		this.qIndex += 1
 
 		if (this.qIndex < this.questions.length) {
+			// Insert the question into the analytics
+			// This assigns the "timestamp" used for reaction speed analytics
+			await this.UpdateQuestionAnalytics();
+
 			// Get data from question & return
 			const roomData = await this.GetRoomData();
 			return roomData;
+
 		} else {
 			// No more questions, so close the room!
 			return {title: this.title, question: {title: "CLOSING ROOM", options: ["now to handle closing the room!"]}}
@@ -107,11 +131,40 @@ export default class Room {
 
 	// Handle a new vote submission by a user
 	async SubmitVote(accountID: string, votedOption: string) {
-		// Update question-specific voting data
-		const questionVoteData = {...this.votes[this.questions[this.qIndex].title], [accountID]: votedOption}
 
-		// Update previous voting store with new data
-		this.votes = {...this.votes, [this.questions[this.qIndex].title]: questionVoteData};
+		// Update question-specific voting data
+		const roomAnalyticalData = this.analytics[this.qIndex];
+		const voteData = {accountID: accountID, option: votedOption, timestamp: Date.now()};
+
+		roomAnalyticalData.votes[accountID] = voteData;
+	}
+
+	// Close the room
+	async CloseRoom() {
+		// Get analytics
+		await this.CreateAnalytics();
+
+		// do other stuff:
+		// disconnect all connections in DB
+		// delete room / remove all sockets from room
+		// etc..
+	}
+
+	// Create room analytics
+	private async CreateAnalytics() {
+		console.log(this.analytics);
+
+		// Now I just need to add a bunch of analytical stuff to this.analytics
+		// Like reaction times
+
+		this.analytics.forEach(questionAnalytics => {
+
+			// Extract each key and value from the dictionary like an enumerated array
+			// (from: https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript)
+			for (const [accountID, userVoteAnalytic] of Object.entries(questionAnalytics.votes)) {
+				console.log(userVoteAnalytic);
+			}
+		});
 	}
 
 	// Gets room title and current question data
@@ -119,17 +172,27 @@ export default class Room {
 		return {
 			title: this.title,
 			question: await this.GetCurrentQuestion(),
-			lastQuestion: this.qIndex >= this.questions.length
+			lastQuestion: this.qIndex >= this.questions.length - 1
 		}
-	}
-
-	// [PRIVATE] Gets the information for the current question
-	async GetCurrentQuestion() {
-		return this.questions[this.qIndex]
 	}
 
 	// Check if the user is the host of the room
 	async CheckIfHost(accountID: string) {
 		return accountID == this.host
+	}
+	
+	private async UpdateQuestionAnalytics() {
+		// Update question-specific voting data (with starting timestamp)
+		const qTitle = this.questions[this.qIndex].title
+		const questionVoteData = {title: qTitle, startTime: Date.now(), votes: {}}
+
+		// Update previous voting store with new data
+		this.analytics.push(questionVoteData);
+	}
+
+	// Gets the information for the current question
+	// NOTE: Clamped so that only the last question can be gotten after the end
+	private async GetCurrentQuestion() {
+		return this.questions[Math.min(this.qIndex, this.questions.length - 1)]
 	}
 }

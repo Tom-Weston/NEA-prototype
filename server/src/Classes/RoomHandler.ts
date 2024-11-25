@@ -68,7 +68,18 @@ export default class RoomHandler {
 		// Confirm host privileges
 		const isHost = await room.CheckIfHost(accountID);
 		if (isHost) {
-			room.CloseRoom();
+			// Get room analytics
+			const analytics = await room.CreateAnalytics();
+			
+
+			// Wait for the room to close itself
+			await room.CloseRoom();
+
+			// Disconnect all sockets from room
+			this.io.in(roomCode).disconnectSockets(true);
+
+			// Delete room instance (prevents memory leak)
+			delete this.rooms[roomCode]
 		}
 	}
 

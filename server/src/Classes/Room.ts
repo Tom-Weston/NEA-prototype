@@ -10,7 +10,6 @@ type Question = {
 }
 
 type VoteData = {
-	accountID: string,
 	option: string,
 	timestamp: number
 }
@@ -18,7 +17,7 @@ type VoteData = {
 type QuestionData = 
 	{
 		title: string,
-		startTime: number,
+		iniTimestamp: number,
 
 		// Uses a dictionary (hash map) instead of an array
 		// to remove duplicate entries (vote skew)
@@ -114,19 +113,13 @@ export default class Room {
 		// Increment pointer to next question
 		this.qIndex += 1
 
-		if (this.qIndex < this.questions.length) {
-			// Insert the question into the analytics
-			// This assigns the "timestamp" used for reaction speed analytics
-			await this.UpdateQuestionAnalytics();
+		// Insert the question into the analytics
+		// This assigns the "timestamp" used for reaction speed analytics
+		await this.UpdateQuestionAnalytics();
 
-			// Get data from question & return
-			const roomData = await this.GetRoomData();
-			return roomData;
-
-		} else {
-			// No more questions, so close the room!
-			return {title: this.title, question: {title: "CLOSING ROOM", options: ["now to handle closing the room!"]}}
-		}
+		// Get data from question & return
+		const roomData = await this.GetRoomData();
+		return roomData;
 	}
 
 	// Handle a new vote submission by a user
@@ -134,37 +127,47 @@ export default class Room {
 
 		// Update question-specific voting data
 		const roomAnalyticalData = this.analytics[this.qIndex];
-		const voteData = {accountID: accountID, option: votedOption, timestamp: Date.now()};
+		const voteData: VoteData = {option: votedOption, timestamp: Date.now()};
 
 		roomAnalyticalData.votes[accountID] = voteData;
 	}
 
-	// Close the room
-	async CloseRoom() {
-		// Get analytics
-		await this.CreateAnalytics();
-
-		// do other stuff:
-		// disconnect all connections in DB
-		// delete room / remove all sockets from room
-		// etc..
-	}
-
 	// Create room analytics
-	private async CreateAnalytics() {
+	async CreateAnalytics() {
 		console.log(this.analytics);
 
 		// Now I just need to add a bunch of analytical stuff to this.analytics
 		// Like reaction times
 
 		this.analytics.forEach(questionAnalytics => {
+			const {iniTimestamp, votes} = questionAnalytics;
+
+			// Store reaction times in an array (for quick-sort implementation)
+			const reactionTimes: [string, number][] = []
 
 			// Extract each key and value from the dictionary like an enumerated array
+			// then process into respective arrays for analysis processing
 			// (from: https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript)
-			for (const [accountID, userVoteAnalytic] of Object.entries(questionAnalytics.votes)) {
-				console.log(userVoteAnalytic);
+			for (const [accountID, {option, timestamp}] of Object.entries(votes)) {
+				reactionTimes.push([accountID, timestamp]);
 			}
+
+			// THEN SORT reactionTimes!!!!!
 		});
+	}
+
+	// Close the room
+	async CloseRoom() {
+		// Delete all user connection records to the room (from DB)
+		await TempDB.run("DELETE FROM Connection WHERE roomID = ?", [this.id])
+
+		// Delete room record (from DB)
+		await TempDB.run("DELETE FROM Room WHERE roomID = ?", [this.id])
+
+		// do other stuff:
+		// disconnect all connections in DB
+		// delete room / remove all sockets from room
+		// etc..
 	}
 
 	// Gets room title and current question data
@@ -184,7 +187,7 @@ export default class Room {
 	private async UpdateQuestionAnalytics() {
 		// Update question-specific voting data (with starting timestamp)
 		const qTitle = this.questions[this.qIndex].title
-		const questionVoteData = {title: qTitle, startTime: Date.now(), votes: {}}
+		const questionVoteData = {title: qTitle, iniTimestamp: Date.now(), votes: {}}
 
 		// Update previous voting store with new data
 		this.analytics.push(questionVoteData);

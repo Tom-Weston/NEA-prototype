@@ -7,10 +7,11 @@ import Home from './components/Home';
 import CreateRoom from './components/CreateRoom';
 import JoinRoom from './components/JoinRoom';
 import Room from './components/Room';
+import Login from './components/Login';
+import Analytics from './components/Analytics';
 
 // Styling
 import './index.css';
-import Login from './components/Login';
 
 // Learnt react router system through https://www.youtube.com/watch?v=oTIJunBa6MA&ab_channel=CosdenSolutions
 const router = createBrowserRouter([
@@ -34,6 +35,14 @@ const router = createBrowserRouter([
   {
     path: "/room/:roomCode",
     element: <Room />
+  },
+  {
+    path: "/test",
+    element: <Analytics />
+  },
+  {
+    path: "/room/:roomCode/analytics",
+    element: <Analytics />
   }
 ]);
 

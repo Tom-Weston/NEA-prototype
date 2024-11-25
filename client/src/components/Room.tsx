@@ -1,6 +1,6 @@
 // React
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { NavigateFunction, useLocation, useNavigate, useParams } from "react-router-dom"
 
 // Socket
 import { Socket } from "socket.io-client";
@@ -10,7 +10,7 @@ import Redir from "./Redir";
 import SocketInfo from "./SocketInfo";
 
 // Handles the client-server connection
-function socketEvents(socket: Socket, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) {
+function socketEvents(socket: Socket, username: string, navigate: NavigateFunction, setRoomData: React.Dispatch<React.SetStateAction<RoomData>>) {
 
 	// Log when connected
 	socket.on("connect", () => {
@@ -24,6 +24,13 @@ function socketEvents(socket: Socket, setRoomData: React.Dispatch<React.SetState
 
 		setRoomData(data);
 	});
+
+	socket.on("res: close-room", (analytics) => {
+		console.log("Closed room!")
+
+		// NOTE: If this doesn't work, parse in inviteCode into params instead
+		navigate(window.location.href + "/analytics", {state: {username: username, analytics: analytics}})
+	})
 };
 
 type RoomData = {
@@ -61,7 +68,7 @@ export default function Room() {
 	// NOTE: Adding 'socket' as a dependency recursively lags the
 	// entire PC to unresponsiveness
 	useEffect(() => {
-		socketEvents(socket, setRoomData);
+		socketEvents(socket, username, navigate, setRoomData);
 	}, [socket]);
 
 	// Get room data when user joins the room

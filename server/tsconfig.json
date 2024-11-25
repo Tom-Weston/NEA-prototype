@@ -1,0 +1,29 @@
+// Configuring TypeScript engine
+// (from: https://www.youtube.com/watch?v=H91aqUHn8sE&ab_channel=BeyondFireship)
+{
+	"compilerOptions": {
+		// Allows module (import) code
+		"module": "NodeNext",
+		"moduleResolution": "nodenext",
+
+		// Type of compiled code (ES2020 is standard)
+		"target": "ES2020",
+
+		// Maps compiled code to ts code for debugging
+		"sourceMap": true,
+
+		// Where the code will be compiled for the build
+		// (do 'npm run build' to do this)
+		"outDir": "dist",
+
+		"allowJs": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+	},
+	"include": ["src", "decs.d.ts"]
+}

@@ -13,7 +13,7 @@ export default function Home() {
 
 	useEffect(() => {
 		if (socket) {
-			console.log(socket.id);
+			console.log(`Socket connected [${socket.id}]`);
 		}
 	}, [socket])
 

@@ -71,12 +71,17 @@ export default class RoomHandler {
 			// Get room analytics
 			const analytics = await room.CreateAnalytics();
 			
+			// Send all analytics to the participants
+			this.io.to(roomCode).emit("res: close-room", analytics)
 
 			// Wait for the room to close itself
 			await room.CloseRoom();
 
 			// Disconnect all sockets from room
-			this.io.in(roomCode).disconnectSockets(true);
+			const socketsInRoom = await this.io.in(roomCode).fetchSockets()
+			socketsInRoom.forEach((socket) => {
+				socket.leave(roomCode);
+			});
 
 			// Delete room instance (prevents memory leak)
 			delete this.rooms[roomCode]
@@ -96,7 +101,6 @@ export default class RoomHandler {
 		var inviteCode = await this.GenerateInviteCode();
 		this.rooms[inviteCode] = new Room(socket, hostID, templateJSON.title, roomData.size, inviteCode, templateJSON.questions)
 	}
-
 
 	static async JoinRoom(socket: Socket, inviteCode: string, guestID: string) {
 		const room = this.rooms[inviteCode];

@@ -29,7 +29,7 @@ function socketEvents(socket: Socket, username: string, navigate: NavigateFuncti
 		console.log("Closed room!")
 
 		// NOTE: If this doesn't work, parse in inviteCode into params instead
-		navigate(window.location.href + "/analytics", {state: {username: username, analytics: analytics}})
+		navigate("/room/analytics", {state: {username: username, analytics: analytics}})
 	})
 };
 
@@ -65,11 +65,7 @@ export default function Room() {
 	}, [state, navigate])
 
 	// Setup the socket connection
-	// NOTE: Adding 'socket' as a dependency recursively lags the
-	// entire PC to unresponsiveness
-	useEffect(() => {
-		socketEvents(socket, username, navigate, setRoomData);
-	}, [socket]);
+	useEffect(() => socketEvents(socket, username, navigate, setRoomData), [socket, navigate, username]);
 
 	// Get room data when user joins the room
 	useEffect(() => {

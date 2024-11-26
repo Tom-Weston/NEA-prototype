@@ -41,7 +41,7 @@ const router = createBrowserRouter([
     element: <Analytics />
   },
   {
-    path: "/room/:roomCode/analytics",
+    path: "/room/analytics",
     element: <Analytics />
   }
 ]);

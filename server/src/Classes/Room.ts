@@ -3,6 +3,7 @@ import { Socket } from "socket.io";
 
 // Components
 import TempDB from "./TempDB";
+import Essential from "./Essential";
 
 type Question = {
 	title: string;
@@ -14,18 +15,30 @@ type VoteData = {
 	timestamp: number
 }
 
-type QuestionData = 
-	{
-		title: string,
-		iniTimestamp: number,
+type Analytics = {
+	title: string,
+	reactionTimes: ReactionTime[]
+}
 
-		// Uses a dictionary (hash map) instead of an array
-		// to remove duplicate entries (vote skew)
-		votes: {
-			[accountID: string]: VoteData
-		}
-	}[]
+type QuestionData = {
+	title: string,
+	iniTimestamp: number,
 
+	// Uses a dictionary (hash map) instead of an array
+	// to remove duplicate entries (vote skew)
+	votes: {
+		[accountID: string]: VoteData
+	}
+}[]
+
+type ReactionTime = {
+	questionTitle: string,
+	fastest: {
+		accountID: string,
+		// Time (ms)
+		time: number
+	}
+}
 
 export default class Room {
 	private id: string;
@@ -133,27 +146,44 @@ export default class Room {
 	}
 
 	// Create room analytics
-	async CreateAnalytics() {
+	async CreateAnalytics(): Promise<Analytics> {
 		console.log(this.analytics);
 
 		// Now I just need to add a bunch of analytical stuff to this.analytics
 		// Like reaction times
-
+		
+		var reactionTimes: ReactionTime[] = [];
 		this.analytics.forEach(questionAnalytics => {
-			const {iniTimestamp, votes} = questionAnalytics;
+			const {title, iniTimestamp, votes} = questionAnalytics;
 
 			// Store reaction times in an array (for quick-sort implementation)
-			const reactionTimes: [string, number][] = []
+			var questionReactionTimes: [string, number][] = []
 
 			// Extract each key and value from the dictionary like an enumerated array
 			// then process into respective arrays for analysis processing
 			// (from: https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript)
 			for (const [accountID, {option, timestamp}] of Object.entries(votes)) {
-				reactionTimes.push([accountID, timestamp]);
+				questionReactionTimes.push([accountID, timestamp - iniTimestamp]);
 			}
 
-			// THEN SORT reactionTimes!!!!!
+			// Sort reaction times and import to overall reaction times
+			questionReactionTimes = Essential.QuickSort(questionReactionTimes, [1]);
+			const [fastestAccountID, fastestTime] = questionReactionTimes[0]
+			reactionTimes.push({
+				questionTitle: title,
+				fastest: {
+					accountID: fastestAccountID,
+					time: fastestTime
+				}
+			});
 		});
+
+		console.log(reactionTimes);
+
+		return {
+			title: this.title,
+			reactionTimes: reactionTimes
+		}
 	}
 
 	// Close the room
@@ -162,7 +192,7 @@ export default class Room {
 		await TempDB.run("DELETE FROM Connection WHERE roomID = ?", [this.id])
 
 		// Delete room record (from DB)
-		await TempDB.run("DELETE FROM Room WHERE roomID = ?", [this.id])
+		await TempDB.run("DELETE FROM Room WHERE id = ?", [this.id])
 
 		// do other stuff:
 		// disconnect all connections in DB

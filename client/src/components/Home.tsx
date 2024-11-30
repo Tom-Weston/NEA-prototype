@@ -27,12 +27,12 @@ export default function Home() {
 			!state ? null :
 			<>
 				<h1>Home</h1>
-				<div className="list-row">
+				<div className="list-row no-margin">
 					<Redir to="/create" content="Create Room" state={{username: username}} />
 					<Redir to="/join" content="Join Room" state={{username: username}} />
 				</div>
 
-				<p>Currently logged in as [{username}]</p>
+				<div id="CurrentAccount">Currently logged in as [{username}]</div>
 			</>}
 		</>
 	)

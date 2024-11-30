@@ -70,9 +70,9 @@ export default function CreateRoom() {
 			<h1>Create Room</h1>
 			<form onSubmit={(e) => createRoom(e)}>
 				{/* Template Choice */}
-				<div>
-					<input type="radio" name="template" value="Film" onChange={(e) => updateFormInfo(e)} required />Film
-					<input type="radio" name="template" value="Food" onChange={(e) => updateFormInfo(e)} required />Food
+				<div className="list-row">
+					<span><input type="radio" name="template" value="Film" onChange={(e) => updateFormInfo(e)} required />Film</span>
+					<span><input type="radio" name="template" value="Food" onChange={(e) => updateFormInfo(e)} required />Food</span>
 				</div>
 
 				{/* Room Size */}

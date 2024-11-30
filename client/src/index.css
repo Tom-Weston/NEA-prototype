@@ -1,5 +1,6 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif; */
+  font-family: Arial, Helvetica, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -12,68 +13,140 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Body (full page) */
 body {
-  margin: 0;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  gap: 10px
-}
-
-body, form {
+  /* Column alignment */
   display: flex;
   flex-direction: column;
+
+  /* Fix slider problem */
+  margin: 0;
+
+  /* Center elements */
+  place-items: center;
   justify-content: center;
+
+  /*Dimensions (minimum) */
+  min-width: 320px;
+  min-height: 100vh;
 }
 
+/* Forms */
 form {
+  /* Column alignment */
+  display: flex;
+  flex-direction: column;
+
+  /* Separate elemnts */
   gap: 5px;
 }
 
-form *, #redir {
-  display: flex;
-  justify-content: center;
+/* Textboxes & Buttons */
+input[type="text"], input[type="submit"], #redir, button {
+  /* Dimensions */
+  box-sizing: border-box;
+  width: 200px;
+
+  /* Alignment */
+  text-align: center;
+  padding: 2px 5px;
+
+  /* Colors & Border */
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: solid 2px rgba(255, 255, 255, 0.05);
 }
 
-button {
-  border: solid 2px white;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+/* Highlights textbox (& selected option) */
+input[type="text"]:focus, .selected-opt {
+  border-color: rgba(255, 255, 255, 0.6);
+  outline: 0;
+}
+
+/* Radio inputs (for template choosings */
+input[type="radio"] {
+  /* Remove old radio input designs */
+  /* (from: https://moderncss.dev/pure-css-custom-styled-radio-buttons/) */
+  appearance: none;
+  background-color: rgba(0, 0, 0, 0.25);
+  margin: 0;
+  
+  /* Dimensions */
+  width: 13px;
+  height: 13px;
+
+  /* Border */
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+
+  /* Fix margins */
+  margin: 0px 5px;
+  margin-top: 4px;
+
+  /* Pointer cursor */
   cursor: pointer;
 }
 
-#redir {
-  margin-top: 50px;
-  gap: 10px
+/* Radio input (checked) */
+input[type="radio"]:checked {
+  background-color: rgb(255, 255, 255);
 }
 
-#redir > * {
-  border: solid 2px white;
-  padding: 0 5px;
+/* Pointer Events */
+button, input[type="radio"] input[type="submit"] {
+  cursor: pointer;
+}
+
+/* Center elements vertically */
+div {
+  align-items: center;
+}
+
+#redir {
+  /* Aligment */
+  justify-self: center;
+  
+  /* Margin */
+  margin-top: 30px
+}
+
+/* Displaying the current signed-in account */
+#CurrentAccount {
+  display: flex;
+  justify-content: center;
+
+  margin-top: 30px;
 }
 
 h1, .centre-text {
   text-align: center;
 }
 
+/* Remove hyperlink blue highlight */
 a {
-  justify-self: center;
   text-decoration: none;
   color: white;
 }
 
-.list-row {
+/* Aligning to a specific axis */
+.list-row, .list-col {
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 10px;
 }
 
+/* Ordering into rows */
+.list-row {
+  flex-direction: row;
+}
+
+/* Ordering into columns */
 .list-col {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+}
+
+/* Element & children have no margin */
+.no-margin, .no-margin > * {
+  margin: 0 !important;
 }

@@ -32,8 +32,8 @@ export default function Home() {
 		<>
 			<h1>Login</h1>
 			<form onSubmit={(e) => processAccount(e)} className='list-col'>
-				<input type="text" name="name" placeholder="Username" required onChange={(e) => updateUsername(e)} style={{textAlign: 'center'}} />
-				<input type="submit" value="Login" style={{width: "178px"}} />
+				<input type="text" name="name" placeholder="Username" required onChange={(e) => updateUsername(e)} />
+				<input type="submit" value="Login" />
 			</form>
 		</>
 	)

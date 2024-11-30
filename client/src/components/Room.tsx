@@ -44,6 +44,7 @@ type RoomData = {
 
 export default function Room() {
 	const socket = SocketInfo.inst.socket;
+	const [currOption, setOption] = useState<string>("no option!");
 	const [roomData, setRoomData] = useState<RoomData>({title: "Nothing!", question: {title: "Absolutely nothing!", options: ["nothing 1", "nothing 2"]}, lastQuestion: false});
 	const [isHost, setIsHost] = useState<boolean>(false);
 
@@ -82,6 +83,7 @@ export default function Room() {
 		// Get value from event element
 		// (from: https://stackoverflow.com/questions/42066421/property-value-does-not-exist-on-type-eventtarget)
 		const option = (e.target as HTMLButtonElement).value;
+		setOption(option);
 
 		// Send vote over to server
 		// (need to make sure votes aren't duplicates)
@@ -108,7 +110,7 @@ export default function Room() {
 					<h2>{roomData.question.title}</h2>
 					<div className="list-col">
 						{roomData.question.options.map((option =>
-							<button value={option} onClick={(e) => voteForOption(e)} key={option} style={{width: "200px"}}>{option}</button>
+							<button className={(option == currOption) ? "selected-opt" : ""} value={option} onClick={(e) => voteForOption(e)} key={option} style={{width: "200px"}}>{option}</button>
 						))}
 					</div>
 				</div>

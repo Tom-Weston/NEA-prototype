@@ -1,8 +1,8 @@
 import SQLite3 from 'better-sqlite3';
 
-// --------< IMPORTANT NOTE >-------------
-// Until I get access to the MySQL database from home,
+// -------------< IMPORTANT NOTE >-------------
 // I will be using this temporary local database using SQLite
+// As it is easier to clear the database during tests
 
 export default class TempDB {
 	// Only one db can exist at a time

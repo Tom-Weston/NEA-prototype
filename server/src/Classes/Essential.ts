@@ -48,7 +48,7 @@ export default class Essential {
         final.push(pivot);
         final = final.concat(this.QuickSort(high, keyIndexes));
 
-        // Returnsorted array
+        // Return sorted array
         return final
     }
 }

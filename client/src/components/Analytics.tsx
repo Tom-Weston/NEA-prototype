@@ -7,11 +7,11 @@ import Redir from "./Redir";
 
 type ReactionTime = {
 	questionTitle: string,
-	fastest: {
+	times: {
 		accountID: string,
 		// Time (ms)
 		time: number
-	}
+	}[]
 }
 
 type Analytics = {
@@ -67,16 +67,18 @@ export default function Analytics() {
 							<div>
 								{analytics.reactionTimes.map((reactionTimes) => {
 									
-									const {questionTitle, fastest} = reactionTimes;
-									const {accountID, time} = fastest; 
+									const {questionTitle, times} = reactionTimes;
 									
-									// Converts ms -> s (2 d.p)
-									const convertedTime = Math.round(time/10) / 100
-
 									return (
-									<div key={accountID + time} className="list-col">
+									<div key={questionTitle} className="list-col">
 										<h3 style={{marginBottom: 0}}>{questionTitle}</h3>
-										<p style={{marginTop: 0}}>{convertedTime}s by {accountID}</p>
+										{times.map((user) => {
+											const {time, accountID} = user;
+
+											return (<p style={{margin: 0}}>{Math.round(time/10) / 100}s by {accountID}</p>)
+										}
+											
+										)}
 									</div>
 									)
 								}

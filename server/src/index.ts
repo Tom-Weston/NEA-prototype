@@ -36,29 +36,40 @@ RoomHandler.init(io);
 
 // Handle socket events (from connection)
 io.on("connection", (socket) => {
-	socket.on('req: join-room', ({room, name}) => {
-		RoomHandler.JoinRoom(socket, room, name);
-	})
-
-	socket.on('req: room-data', (room) => {
-		RoomHandler.GetRoomData(socket, room);
-	})
-
+	// Requesting to create a room
 	socket.on('req: create-room', ({roomInfo, host}) => {
 		RoomHandler.CreateRoom(socket, roomInfo, host);
-	})
-
-	socket.on("req: next-question", ({room, name}) => {
-		RoomHandler.NextQuestion(room, name);
 	});
 
+	// Requesting to join a room
+	socket.on('req: join-room', ({room, name}) => {
+		RoomHandler.JoinRoom(socket, room, name);
+	});
+
+	// Requesting to leave a room
+	socket.on('req: leave-room', ({room, name}) => {
+		RoomHandler.LeaveRoom(socket, room, name);
+	});
+
+	// Host requesting to close the room
+	socket.on("req: close-room", ({room, name}) => {
+		RoomHandler.CloseRoom(room, name);
+	});
+	
+	// Submitting an option vote to the current question in a room
 	socket.on("req: submit-vote", ({room, option, name}) => {
 		RoomHandler.SubmitVote(room, option, name);
 	});
 
-	socket.on("req: close-room", ({room, name}) => {
-		RoomHandler.CloseRoom(room, name);
-	})
+	// Host requesting next question for the room
+	socket.on("req: next-question", ({room, name}) => {
+		RoomHandler.NextQuestion(room, name);
+	});
+	
+	// Requesting data upon joining the room
+	socket.on('req: room-data', (room) => {
+		RoomHandler.GetRoomData(socket, room);
+	});
 });
 
 // Attach listeners to port

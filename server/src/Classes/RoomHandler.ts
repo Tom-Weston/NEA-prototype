@@ -28,20 +28,56 @@ export default class RoomHandler {
 		this.rooms = {};
 	}
 
-	// Get the room data from a specific room
-	static async GetRoomData(socket: Socket, inviteCode: string) {
+	// Create a new Room instance
+	static async CreateRoom(socket: Socket, roomData: {template: string, size: number}, hostID: string) {
+		// Get chosen template
+		var templateJSON: Template = FoodTemplate;
+		switch(roomData.template) {
+			case "Food":
+				templateJSON = FoodTemplate;
+				break;
+			case "Film":
+				templateJSON = FilmTemplate;
+				break;
+		}
+		
+		// Get invite code to create Room obj.
+		var inviteCode = await this.GenerateInviteCode();
+		this.rooms[inviteCode] = new Room(socket, hostID, templateJSON.title, roomData.size, inviteCode, templateJSON.questions)
+	}
+
+	static async JoinRoom(socket: Socket, roomCode: string, guestID: string) {
 		// Get Room instance
-		const room = this.rooms[inviteCode];
+		const room = this.rooms[roomCode];
 		if (!room) {
-			console.error(`Room ${inviteCode} does not exist!`);
+			console.log(this.rooms);
+			console.error(`Room ${roomCode} does not exist!`);
 			return;
 		};
 
-		// Get data from instance and relay back to client
-		const roomData = await room.GetRoomData();
-		socket.emit("res: room-data", roomData);
+        // Create connection between client and room (max 1 connection)
+		const roomID_DBReq: any = await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [roomCode]);
+		const roomID = roomID_DBReq.id;
+		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, guestID])
+		
+		// Join host to room
+		room.JoinRoom(socket, guestID);
 	}
 
+	static async LeaveRoom(socket: Socket, roomCode: string, accountID: string) {
+		// Get Room instance
+		const room = this.rooms[roomCode];
+		if (!room) {
+			console.error(`Room ${roomCode} does not exist!`);
+			return;
+		};
+
+		// Disconnect socket from room
+		socket.leave(roomCode)
+
+		// Leave room (DB)
+		room.LeaveRoom(accountID);
+	}
 	// Advance a specific room to the next question
 	static async NextQuestion(roomCode: string, accountID: string) {
 		// Get Room instance
@@ -92,42 +128,6 @@ export default class RoomHandler {
 		}
 	}
 
-	// Create a new Room instance
-	static async CreateRoom(socket: Socket, roomData: {template: string, size: number}, hostID: string) {
-		// Get chosen template
-		var templateJSON: Template = FoodTemplate;
-		switch(roomData.template) {
-			case "Food":
-				templateJSON = FoodTemplate;
-				break;
-			case "Film":
-				templateJSON = FilmTemplate;
-				break;
-		}
-		
-		// Get invite code to create Room obj.
-		var inviteCode = await this.GenerateInviteCode();
-		this.rooms[inviteCode] = new Room(socket, hostID, templateJSON.title, roomData.size, inviteCode, templateJSON.questions)
-	}
-
-	static async JoinRoom(socket: Socket, inviteCode: string, guestID: string) {
-		// Get Room instance
-		const room = this.rooms[inviteCode];
-		if (!room) {
-			console.log(this.rooms);
-			console.error(`Room ${inviteCode} does not exist!`);
-			return;
-		};
-
-        // Create connection between client and room (max 1 connection)
-		const roomID_DBReq: any = await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode]);
-		const roomID = roomID_DBReq.id;
-		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, guestID])
-		
-		// Join host to room
-		room.JoinRoom(socket, guestID);
-	}
-
 	// Submit a vote to a specific room
 	static async SubmitVote(roomCode: string, option: string, accountID: string) {
 		// Get Room instance
@@ -141,8 +141,21 @@ export default class RoomHandler {
 		room.SubmitVote(accountID, option);
 	}
 
+	// Get the room data from a specific room
+	static async GetRoomData(socket: Socket, inviteCode: string) {
+		// Get Room instance
+		const room = this.rooms[inviteCode];
+		if (!room) {
+			console.error(`Room ${inviteCode} does not exist!`);
+			return;
+		};
 
-	static async GenerateInviteCode() {
+		// Get data from instance and relay back to client
+		const roomData = await room.GetRoomData();
+		socket.emit("res: room-data", roomData);
+	}
+
+	private static async GenerateInviteCode() {
         const alphanumericList = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
         var code = "";

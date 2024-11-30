@@ -100,6 +100,11 @@ export default function Room() {
 		socket.emit("req: close-room", {room: roomCode, name: username})
 	}
 
+	function leaveRoom() {
+		console.log("Leaving room")
+		socket.emit("req: leave-room", {room: roomCode, name: username})
+	}
+
 	return (
 		<>
 			<div className="centre-text">{roomCode}</div>
@@ -126,7 +131,7 @@ export default function Room() {
 				:
 				// Otherwise display leave button
 				// [NEED TO IMPLEMENT]
-				!state ? null : <Redir to="/" content="Return to Main Menu" state={{username: username}}></Redir>
+				!state ? null : <Redir onClick={leaveRoom} to="/" content="Return to Main Menu" state={{username: username}}></Redir>
 				}
 			</>
 			}

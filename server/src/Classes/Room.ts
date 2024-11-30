@@ -108,6 +108,7 @@ export default class Room {
         console.log(`Host: '${this.host}' | Title: ${this.title}\n`);
 	}
 
+	// User joining room
 	async JoinRoom(socket: Socket, accountID: string) {
 		// Reject if guest list is full
 		if (this.guests.length + 1 >= this.maxSize) { return }
@@ -166,6 +167,23 @@ export default class Room {
 			title: this.title,
 			reactionTimes: reactionTimes
 		}
+	}
+
+	// User leaving room
+	async LeaveRoom(accountID: string) {
+		// Delete user connection records to the room (from DB)
+		await TempDB.run("DELETE FROM Connection WHERE accountID = ?", [accountID]);
+
+		console.log(this.guests);
+		
+		// Remove user from guest list (NOTE: Analytics will NOT be affected)
+		// (from: https://stackoverflow.com/questions/5767325/how-can-i-remove-a-specific-item-from-an-array-in-javascript)
+		const guestIndex = this.guests.indexOf(accountID);
+		if (guestIndex > -1) {
+			this.guests.splice(guestIndex, 1)
+		}
+
+		console.log(this.guests);
 	}
 
 	// Close the room (DB-side)

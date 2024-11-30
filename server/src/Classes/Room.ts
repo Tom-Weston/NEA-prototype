@@ -33,11 +33,12 @@ type QuestionData = {
 
 type ReactionTime = {
 	questionTitle: string,
-	fastest: {
+	// Reaction times sorted from fastest to slowest
+	times: {
 		accountID: string,
 		// Time (ms)
 		time: number
-	}
+	}[]
 }
 
 export default class Room {
@@ -135,50 +136,31 @@ export default class Room {
 		return roomData;
 	}
 
-	// Handle a new vote submission by a user
-	async SubmitVote(accountID: string, votedOption: string) {
-
-		// Update question-specific voting data
-		const roomAnalyticalData = this.analytics[this.qIndex];
-		const voteData: VoteData = {option: votedOption, timestamp: Date.now()};
-
-		roomAnalyticalData.votes[accountID] = voteData;
-	}
-
 	// Create room analytics
 	async CreateAnalytics(): Promise<Analytics> {
-		console.log(this.analytics);
 
-		// Now I just need to add a bunch of analytical stuff to this.analytics
-		// Like reaction times
-		
+		// Reaction Times Analytics		
 		var reactionTimes: ReactionTime[] = [];
 		this.analytics.forEach(questionAnalytics => {
 			const {title, iniTimestamp, votes} = questionAnalytics;
 
 			// Store reaction times in an array (for quick-sort implementation)
-			var questionReactionTimes: [string, number][] = []
+			var questionReactionTimes: {accountID: string, time: number}[] = []
 
 			// Extract each key and value from the dictionary like an enumerated array
 			// then process into respective arrays for analysis processing
 			// (from: https://stackoverflow.com/questions/34913675/how-to-iterate-keys-values-in-javascript)
 			for (const [accountID, {option, timestamp}] of Object.entries(votes)) {
-				questionReactionTimes.push([accountID, timestamp - iniTimestamp]);
+				questionReactionTimes.push({accountID: accountID, time: timestamp - iniTimestamp});
 			}
 
 			// Sort reaction times and import to overall reaction times
 			questionReactionTimes = Essential.QuickSort(questionReactionTimes, [1]);
-			const [fastestAccountID, fastestTime] = questionReactionTimes[0]
 			reactionTimes.push({
 				questionTitle: title,
-				fastest: {
-					accountID: fastestAccountID,
-					time: fastestTime
-				}
+				times: questionReactionTimes
 			});
 		});
-
-		console.log(reactionTimes);
 
 		return {
 			title: this.title,
@@ -186,18 +168,13 @@ export default class Room {
 		}
 	}
 
-	// Close the room
+	// Close the room (DB-side)
 	async CloseRoom() {
 		// Delete all user connection records to the room (from DB)
-		await TempDB.run("DELETE FROM Connection WHERE roomID = ?", [this.id])
+		await TempDB.run("DELETE FROM Connection WHERE roomID = ?", [this.id]);
 
 		// Delete room record (from DB)
-		await TempDB.run("DELETE FROM Room WHERE id = ?", [this.id])
-
-		// do other stuff:
-		// disconnect all connections in DB
-		// delete room / remove all sockets from room
-		// etc..
+		await TempDB.run("DELETE FROM Room WHERE id = ?", [this.id]);
 	}
 
 	// Gets room title and current question data
@@ -213,7 +190,18 @@ export default class Room {
 	async CheckIfHost(accountID: string) {
 		return accountID == this.host
 	}
+
+	// Handle a new vote submission by a user
+	async SubmitVote(accountID: string, votedOption: string) {
+
+		// Update question-specific voting data
+		const roomAnalyticalData = this.analytics[this.qIndex];
+		const voteData: VoteData = {option: votedOption, timestamp: Date.now()};
+
+		roomAnalyticalData.votes[accountID] = voteData;
+	}
 	
+	// Handle question data (when moving onto the next question)
 	private async UpdateQuestionAnalytics() {
 		// Update question-specific voting data (with starting timestamp)
 		const qTitle = this.questions[this.qIndex].title

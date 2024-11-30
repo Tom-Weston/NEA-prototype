@@ -8,9 +8,13 @@ import Room from './Room';
 // Templates
 import FilmTemplate from '../templates/Film.js';
 import FoodTemplate from '../templates/Food.js';
+type Template = { title: string; questions: { title: string; options: string[] }[]; }
 
-type Template = { title: string; questions: { title: string; options: string[]; }[]; }
 
+// Organising the rooms is difficult, and they need to be kept track of
+// to avoid memory leaks.
+// This class stores every existing room
+// and the communication link between clients (sockets) and rooms (see Room class)
 export default class RoomHandler {
 	private static io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
 	private static rooms: { [roomCode: string]: Room}; 
@@ -24,22 +28,23 @@ export default class RoomHandler {
 		this.rooms = {};
 	}
 
-
+	// Get the room data from a specific room
 	static async GetRoomData(socket: Socket, inviteCode: string) {
+		// Get Room instance
 		const room = this.rooms[inviteCode];
 		if (!room) {
 			console.error(`Room ${inviteCode} does not exist!`);
 			return;
 		};
 
+		// Get data from instance and relay back to client
 		const roomData = await room.GetRoomData();
-
 		socket.emit("res: room-data", roomData);
 	}
 
-
+	// Advance a specific room to the next question
 	static async NextQuestion(roomCode: string, accountID: string) {
-		// Get room
+		// Get Room instance
 		const room = this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${roomCode} does not exist!`);
@@ -57,8 +62,9 @@ export default class RoomHandler {
 		}
 	}
 	
+	// Close a specific room
 	static async CloseRoom(roomCode: string, accountID: string) {
-		// Get room
+		// Get Room instance
 		const room = this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${roomCode} does not exist!`);
@@ -68,13 +74,11 @@ export default class RoomHandler {
 		// Confirm host privileges
 		const isHost = await room.CheckIfHost(accountID);
 		if (isHost) {
-			// Get room analytics
+			// Get room analytics and relay to all room participants
 			const analytics = await room.CreateAnalytics();
-			
-			// Send all analytics to the participants
 			this.io.to(roomCode).emit("res: close-room", analytics)
-
-			// Wait for the room to close itself
+			
+			// Wait for the room to delete all DB room data
 			await room.CloseRoom();
 
 			// Disconnect all sockets from room
@@ -83,19 +87,23 @@ export default class RoomHandler {
 				socket.leave(roomCode);
 			});
 
-			// Delete room instance (prevents memory leak)
+			// Delete Room instance (prevents memory leak)
 			delete this.rooms[roomCode]
 		}
 	}
 
+	// Create a new Room instance
 	static async CreateRoom(socket: Socket, roomData: {template: string, size: number}, hostID: string) {
-		// Template detection system
+		// Get chosen template
 		var templateJSON: Template = FoodTemplate;
-		if (roomData.template == "Food") {
-			templateJSON = FoodTemplate;
-		} else if (roomData.template == "Film") {
-			templateJSON = FilmTemplate;
-		};
+		switch(roomData.template) {
+			case "Food":
+				templateJSON = FoodTemplate;
+				break;
+			case "Film":
+				templateJSON = FilmTemplate;
+				break;
+		}
 		
 		// Get invite code to create Room obj.
 		var inviteCode = await this.GenerateInviteCode();
@@ -103,6 +111,7 @@ export default class RoomHandler {
 	}
 
 	static async JoinRoom(socket: Socket, inviteCode: string, guestID: string) {
+		// Get Room instance
 		const room = this.rooms[inviteCode];
 		if (!room) {
 			console.log(this.rooms);
@@ -113,21 +122,22 @@ export default class RoomHandler {
         // Create connection between client and room (max 1 connection)
 		const roomID_DBReq: any = await TempDB.get("SELECT id FROM Room WHERE inviteCode = ?", [inviteCode]);
 		const roomID = roomID_DBReq.id;
-
 		await TempDB.run("INSERT INTO Connection (roomID, accountID) VALUES (?, ?)", [roomID, guestID])
 		
-		// Join room
+		// Join host to room
 		room.JoinRoom(socket, guestID);
 	}
 
-
+	// Submit a vote to a specific room
 	static async SubmitVote(roomCode: string, option: string, accountID: string) {
+		// Get Room instance
 		const room = this.rooms[roomCode];
 		if (!room) {
 			console.error(`Room ${roomCode} does not exist!`);
 			return;
 		};
 
+		// Submit vote to Room
 		room.SubmitVote(accountID, option);
 	}
 

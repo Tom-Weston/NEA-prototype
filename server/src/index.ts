@@ -6,8 +6,8 @@ import cors from 'cors';
 
 // Components
 // NOTE: extention is '.js' as it is compiled that way
-import TempDB from './Classes/TempDB';
-import RoomHandler from './Classes/RoomHandler'
+import TempDB from './Classes/TempDBAccess';
+import RoomService from './Classes/Service/RoomService'
 
 TempDB.init();
 
@@ -32,43 +32,43 @@ const io = new Server(server, {
 	}
 });
 
-RoomHandler.init(io);
+RoomService.start(io);
 
 // Handle socket events (from connection)
 io.on("connection", (socket) => {
 	// Requesting to create a room
 	socket.on('req: create-room', ({roomInfo, host}) => {
-		RoomHandler.CreateRoom(socket, roomInfo, host);
+		RoomService.CreateRoom(socket, roomInfo, host);
 	});
 
 	// Requesting to join a room
 	socket.on('req: join-room', ({room, name}) => {
-		RoomHandler.JoinRoom(socket, room, name);
+		RoomService.JoinRoom(socket, room, name);
 	});
 
 	// Requesting to leave a room
 	socket.on('req: leave-room', ({room, name}) => {
-		RoomHandler.LeaveRoom(socket, room, name);
+		RoomService.LeaveRoom(socket, room, name);
 	});
 
 	// Host requesting to close the room
 	socket.on("req: close-room", ({room, name}) => {
-		RoomHandler.CloseRoom(room, name);
+		RoomService.CloseRoom(room, name);
 	});
 	
 	// Submitting an option vote to the current question in a room
 	socket.on("req: submit-vote", ({room, option, name}) => {
-		RoomHandler.SubmitVote(room, option, name);
+		RoomService.SubmitVote(room, option, name);
 	});
 
 	// Host requesting next question for the room
 	socket.on("req: next-question", ({room, name}) => {
-		RoomHandler.NextQuestion(room, name);
+		RoomService.NextQuestion(room, name);
 	});
 	
 	// Requesting data upon joining the room
 	socket.on('req: room-data', (room) => {
-		RoomHandler.GetRoomData(socket, room);
+		RoomService.GetRoomData(socket, room);
 	});
 });
 

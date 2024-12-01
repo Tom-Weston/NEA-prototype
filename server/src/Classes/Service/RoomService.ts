@@ -2,12 +2,14 @@
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
 
 // Classes
-import TempDB from './TempDB';
-import Room from './Room';
+import Service from './Service';
+import Room from '../Room/Room';
+import TempDB from '../TempDBAccess';
 
 // Templates
-import FilmTemplate from '../templates/Film.js';
-import FoodTemplate from '../templates/Food.js';
+import FilmTemplate from '../../templates/Film.js';
+import FoodTemplate from '../../templates/Food.js';
+
 type Template = { title: string; questions: { title: string; options: string[] }[]; }
 
 
@@ -15,17 +17,20 @@ type Template = { title: string; questions: { title: string; options: string[] }
 // to avoid memory leaks.
 // This class stores every existing room
 // and the communication link between clients (sockets) and rooms (see Room class)
-export default class RoomHandler {
+export default class RoomService extends Service {
 	private static io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>;
 	private static rooms: { [roomCode: string]: Room}; 
 
-	static async init(io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
+	static override init(io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
 		// As, for security reasons, the server (io) shouldn't be
 		// added into every single room, its put here instead
 		this.io = io;
 
 		// Keeps track of all currently running rooms
 		this.rooms = {};
+
+		// Uses the inherited value to ensure that the service is online
+		console.log("[RoomService] " + ((this.online) ? "ONLINE" : "OFFLINE"));
 	}
 
 	// Create a new Room instance
@@ -88,7 +93,7 @@ export default class RoomHandler {
 		};
 
 		// Confirm host privileges
-		const isHost = await room.CheckIfHost(accountID);
+		const isHost = await room.isHost(accountID);
 		if (isHost) {
 			// Get question data
 			const roomData = await room.GetNextQuestion()
@@ -108,20 +113,20 @@ export default class RoomHandler {
 		};
 
 		// Confirm host privileges
-		const isHost = await room.CheckIfHost(accountID);
+		const isHost = await room.isHost(accountID);
 		if (isHost) {
 			// Get room analytics and relay to all room participants
 			const analytics = await room.CreateAnalytics();
 			this.io.to(roomCode).emit("res: close-room", analytics)
-			
-			// Wait for the room to delete all DB room data
-			await room.CloseRoom();
 
 			// Disconnect all sockets from room
 			const socketsInRoom = await this.io.in(roomCode).fetchSockets()
 			socketsInRoom.forEach((socket) => {
 				socket.leave(roomCode);
 			});
+
+			// Wait for the room to delete all DB room data
+			await room.CloseRoom();
 
 			// Delete Room instance (prevents memory leak)
 			delete this.rooms[roomCode]

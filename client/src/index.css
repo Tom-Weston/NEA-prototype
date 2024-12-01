@@ -82,9 +82,6 @@ input[type="radio"] {
   /* Fix margins */
   margin: 0px 5px;
   margin-top: 4px;
-
-  /* Pointer cursor */
-  cursor: pointer;
 }
 
 /* Radio input (checked) */
@@ -93,7 +90,7 @@ input[type="radio"]:checked {
 }
 
 /* Pointer Events */
-button, input[type="radio"] input[type="submit"] {
+button, input[type="radio"], input[type="submit"] {
   cursor: pointer;
 }
 
@@ -118,7 +115,16 @@ div {
   margin-top: 30px;
 }
 
-h1, .centre-text {
+/* Headers */
+h1, h2 {
+  /* Only bottom margin */
+  margin: 0 0 20px 0;
+
+  /* Centre text */
+  text-align: center;
+}
+
+.centre-text {
   text-align: center;
 }
 

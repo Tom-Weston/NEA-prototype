@@ -56,14 +56,11 @@ export default function Analytics() {
 				{(!analytics?.reactionTimes) ? "no analytics!" :
 				<>
 					<h1>{analytics.title}</h1>
-					[ROOM CLOSED]
-					
-					<br /><br /><br />
 
 					{ /* Analytics */}
 					
 						<div>
-							<h2 style={{textAlign: "center"}}>Reaction Times</h2>
+							<h2>Reaction Times</h2>
 							<div>
 								{analytics.reactionTimes.map((reactionTimes) => {
 									

@@ -79,6 +79,7 @@ export default function Room() {
 		setIsHost(state.host);
 	}, [state])
 
+	// Triggered upon selecting an option
 	function voteForOption(e: React.MouseEvent<HTMLButtonElement>) {
 		// Get value from event element
 		// (from: https://stackoverflow.com/questions/42066421/property-value-does-not-exist-on-type-eventtarget)
@@ -90,16 +91,19 @@ export default function Room() {
 		socket.emit("req: submit-vote", {room: roomCode, option: option, name: username});
 	}
 
+	// Triggered when "Next Question" is clicked
 	function nextQuestion() {
 		console.log("getting next question");
 		socket.emit("req: next-question", {room: roomCode, name: username});
 	}
 
+	// Triggered when "Close Room" is clicked
 	function closeRoom() {
 		console.log("Closing room")
 		socket.emit("req: close-room", {room: roomCode, name: username})
 	}
 
+	// Triggered when "Return to Main Menu" is clicked
 	function leaveRoom() {
 		console.log("Leaving room")
 		socket.emit("req: leave-room", {room: roomCode, name: username})

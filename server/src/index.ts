@@ -1,12 +1,13 @@
-// Server (w/ CORS)
+// Express.js with socket.io server (w/ CORS)
+// NOTE:	Cross-Origin Resource Sharing (CORS) is needed
+// 			as the server and client origin ports are different
 import express from 'express';
 import { Server } from 'socket.io';
 import http from 'http';
 import cors from 'cors';
 
 // Components
-// NOTE: extention is '.js' as it is compiled that way
-import TempDB from './Classes/TempDBAccess';
+import TempDB from './Classes/TempDB';
 import RoomService from './Classes/Service/RoomService'
 
 TempDB.init();

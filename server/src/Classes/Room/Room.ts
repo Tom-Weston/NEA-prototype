@@ -2,20 +2,13 @@
 import { Socket } from "socket.io";
 
 // Components
-import TempDB from "../TempDBAccess";
-import Essential from "../Essential";
+import TempDB from "../TempDB";
 import Question from "./Question";
 import RoomAnalytics from "./RoomAnalytics";
-import { time } from "console";
 
 type QuestionConst = {
 	title: string;
 	options: string[];
-}
-
-type VoteData = {
-	option: string,
-	timestamp: number
 }
 
 type Analytics = {
@@ -121,14 +114,10 @@ export default class Room {
 		}
 	}
 
-	// Gets the information for the next question
-	public async GetNextQuestion() {
-		// Increment pointer to next question
-		this.qIndex += 1
-
-		// Get data from question & return
-		const roomData = await this.GetRoomData();
-		return roomData;
+	// Handle a new vote submission by a user
+	public async SubmitVote(accountID: string, votedOption: string) {
+		const currQuestion = this.questions[this.qIndex];
+		await currQuestion.SubmitVote(accountID, votedOption);
 	}
 
 	// Create room analytics
@@ -155,10 +144,14 @@ export default class Room {
 		await TempDB.run("DELETE FROM Room WHERE id = ?", [this.id]);
 	}
 
-	// Handle a new vote submission by a user
-	public async SubmitVote(accountID: string, votedOption: string) {
-		const currQuestion = this.questions[this.qIndex];
-		await currQuestion.SubmitVote(accountID, votedOption);
+	// Gets the information for the next question
+	public async GetNextQuestion() {
+		// Increment pointer to next question
+		this.qIndex += 1
+
+		// Get data from question & return
+		const roomData = await this.GetRoomData();
+		return roomData;
 	}
 
 	// Gets room title and current question data

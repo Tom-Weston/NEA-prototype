@@ -57,6 +57,7 @@ export default class RoomAnalytics {
 		return analytics;
 	}
 
+	// Create Reaction Time stats per-question
 	private CreateReactionTimes(): ReactionTime[] {	
 		let reactionTimes = [] as ReactionTime[];
 

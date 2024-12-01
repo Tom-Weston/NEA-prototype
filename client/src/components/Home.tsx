@@ -28,6 +28,7 @@ export default function Home() {
 			<>
 				<h1>Home</h1>
 				<div className="list-row no-margin">
+					{/* Redirect Links */}
 					<Redir to="/create" content="Create Room" state={{username: username}} />
 					<Redir to="/join" content="Join Room" state={{username: username}} />
 				</div>

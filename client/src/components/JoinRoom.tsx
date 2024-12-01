@@ -47,6 +47,7 @@ export default function JoinRoom() {
 	// Called when the form is submitted
 	function joinRoom(e: FormEvent<HTMLFormElement>) {
 		e.preventDefault()
+		
 		// Request to join the room
 		// Then wait for "res: join-room" (see socketEvents() function)
 		socket.emit("req: join-room", {room: room, name: username});

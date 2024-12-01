@@ -17,14 +17,18 @@ export default function Home() {
 		}
 	}, [socket])
 
+	// Update form value (triggered on username input change)
 	function updateUsername(e: React.ChangeEvent<HTMLInputElement>) {
 		const {value} = e.target;
-		setUsername(value);
+		setUsername(value);		// Sets 'username' to new value
 	}
 
+	// Triggered when the form is submitted
 	function processAccount(e: FormEvent<HTMLFormElement>) {
+		// Prevents refreshing the page
 		e.preventDefault();
 
+		// Redirect to home page with username in state
 		navigate("/home", {state: {username: username}})
 	}
 

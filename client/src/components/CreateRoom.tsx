@@ -57,6 +57,7 @@ export default function CreateRoom() {
 		setFormInfo((prev) => ({...prev, [name]: value}))
 	}
 
+	// Triggered on form submit
 	function createRoom(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		

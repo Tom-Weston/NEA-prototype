@@ -10,6 +10,8 @@ interface Props {
 	}
 }
 
+// Custom redirect function
+// Acts the same as <Link> but allows content to be added as well
 export default function Redir({to, content, state, onClick}: Props) {
 	return (
 		<>
@@ -17,3 +19,4 @@ export default function Redir({to, content, state, onClick}: Props) {
 		</>
 	);
 }
+

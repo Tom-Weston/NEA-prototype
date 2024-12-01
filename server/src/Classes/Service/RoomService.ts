@@ -4,7 +4,7 @@ import { DefaultEventsMap, Server, Socket } from 'socket.io';
 // Classes
 import Service from './Service';
 import Room from '../Room/Room';
-import TempDB from '../TempDBAccess';
+import TempDB from '../TempDB';
 
 // Templates
 import FilmTemplate from '../../templates/Film.js';
@@ -83,6 +83,7 @@ export default class RoomService extends Service {
 		// Leave room (DB)
 		room.LeaveRoom(accountID);
 	}
+	
 	// Advance a specific room to the next question
 	static async NextQuestion(roomCode: string, accountID: string) {
 		// Get Room instance
